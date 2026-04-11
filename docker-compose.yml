@@ -1,0 +1,613 @@
+services:
+  # USER SERVICE
+  user-app:
+    build: ./backend/user-service
+    container_name: user-app
+    depends_on:
+      - user-db
+    environment:
+      DB_HOST: user-db
+      DB_PORT: 5432
+      DB_DATABASE: user_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_SERVICE_NAME: user-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: baggage,tracecontext
+      OTEL_TRACES_EXPORTER: otlp
+    volumes:
+      - ./backend/user-service:/var/www/html
+    networks:
+      - laravel-net
+
+  # TEMPLATE SERVICE
+  template-app:
+    build: ./backend/template-service
+    container_name: template-app
+    depends_on:
+      - template-db
+    environment:
+      DB_HOST: template-db
+      DB_PORT: 5432
+      DB_DATABASE: template_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_SERVICE_NAME: template-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: baggage,tracecontext
+      OTEL_TRACES_EXPORTER: otlp
+    volumes:
+      - ./backend/template-service:/var/www/html
+    networks:
+      - laravel-net
+
+  # FILE SERVICE
+  file-app:
+    build: ./backend/file-service
+    container_name: file-app
+    depends_on:
+      - file-db
+    environment:
+      DB_HOST: file-db
+      DB_PORT: 5432
+      DB_DATABASE: file_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_SERVICE_NAME: file-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PROPAGATORS: baggage,tracecontext
+      OTEL_TRACES_EXPORTER: otlp
+    volumes:
+      - ./backend/file-service:/var/www/html
+    networks:
+      - laravel-net
+
+  # AUDIT SERVICE
+  audit-app:
+    build: ./backend/audit-service
+    container_name: audit-app
+    depends_on:
+      - audit-db
+    environment:
+      DB_HOST: audit-db
+      DB_PORT: 5432
+      DB_DATABASE: audit_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DD_AGENT_HOST: datadog-agent
+      DD_TRACE_AGENT_PORT: "8126"
+      DD_SERVICE: audit-service
+      DD_ENV: local
+      DD_LOGS_INJECTION: "true"
+    volumes:
+      - ./backend/audit-service:/var/www/html
+    networks:
+      - laravel-net
+
+  # KAFKA CONSUMERS (auto-started, restart on crash)
+  template-consumer:
+    build: ./backend/template-service
+    container_name: template-consumer
+    restart: unless-stopped
+    entrypoint: ["consumer-entrypoint.sh"]
+    depends_on:
+      - template-app
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      DB_HOST: template-db
+      DB_PORT: 5432
+      DB_DATABASE: template_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - ./backend/template-service:/var/www/html
+    networks:
+      - laravel-net
+
+  file-consumer:
+    build: ./backend/file-service
+    container_name: file-consumer
+    restart: unless-stopped
+    entrypoint: ["consumer-entrypoint.sh"]
+    depends_on:
+      - file-app
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      DB_HOST: file-db
+      DB_PORT: 5432
+      DB_DATABASE: file_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - ./backend/file-service:/var/www/html
+    networks:
+      - laravel-net
+
+  audit-consumer:
+    build: ./backend/audit-service
+    container_name: audit-consumer
+    restart: unless-stopped
+    entrypoint: ["consumer-entrypoint.sh"]
+    depends_on:
+      - audit-app
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      DB_HOST: audit-db
+      DB_PORT: 5432
+      DB_DATABASE: audit_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - ./backend/audit-service:/var/www/html
+    networks:
+      - laravel-net
+
+  # QUEUE WORKERS (process Laravel queued events → Kafka producers)
+  template-queue:
+    build: ./backend/template-service
+    container_name: template-queue
+    restart: unless-stopped
+    entrypoint: ["queue-entrypoint.sh"]
+    depends_on:
+      - template-app
+      - redis
+    environment:
+      DB_HOST: template-db
+      DB_PORT: 5432
+      DB_DATABASE: template_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - ./backend/template-service:/var/www/html
+    networks:
+      - laravel-net
+
+  file-queue:
+    build: ./backend/file-service
+    container_name: file-queue
+    restart: unless-stopped
+    entrypoint: ["queue-entrypoint.sh"]
+    depends_on:
+      - file-app
+      - redis
+    environment:
+      DB_HOST: file-db
+      DB_PORT: 5432
+      DB_DATABASE: file_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+    volumes:
+      - ./backend/file-service:/var/www/html
+    networks:
+      - laravel-net
+
+  # DATABASES
+  user-db:
+    image: postgres:15
+    container_name: user-db
+    restart: always
+    environment:
+      POSTGRES_DB: user_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
+  template-db:
+    image: postgres:15
+    container_name: template-db
+    restart: always
+    environment:
+      POSTGRES_DB: template_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - template-db-data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
+  file-db:
+    image: postgres:15
+    container_name: file-db
+    restart: always
+    environment:
+      POSTGRES_DB: file_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - file-db-data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
+  audit-db:
+    image: postgres:15
+    container_name: audit-db
+    restart: always
+    environment:
+      POSTGRES_DB: audit_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - audit-db-data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
+  user-nginx:
+    image: nginx:alpine
+    container_name: user-nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./backend/user-service:/var/www/html
+      - ./.docker/nginx/user.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - user-app
+    networks:
+      - laravel-net
+
+  template-nginx:
+    image: nginx:alpine
+    container_name: template-nginx
+    ports:
+      - "8082:80"
+    volumes:
+      - ./backend/template-service:/var/www/html
+      - ./.docker/nginx/template.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - template-app
+    networks:
+      - laravel-net
+
+  file-nginx:
+    image: nginx:alpine
+    container_name: file-nginx
+    ports:
+      - "8083:80"
+    volumes:
+      - ./backend/file-service:/var/www/html
+      - ./.docker/nginx/file.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - file-app
+    networks:
+      - laravel-net
+
+  audit-nginx:
+    image: nginx:alpine
+    container_name: audit-nginx
+    ports:
+      - "8084:80"
+    volumes:
+      - ./backend/audit-service:/var/www/html
+      - ./.docker/nginx/audit.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - audit-app
+    networks:
+      - laravel-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - laravel-net
+
+  # KAFKA STACK
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_4LW_COMMANDS_WHITELIST: ruok,mntr,conf,stat
+    ports:
+      - "2181:2181"
+    networks:
+      - laravel-net
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    networks:
+      - laravel-net
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka2
+    depends_on:
+      - zookeeper
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    networks:
+      - laravel-net
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka3
+    depends_on:
+      - zookeeper
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    networks:
+      - laravel-net
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka-init
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    volumes:
+      - ./.docker/kafka/entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    networks:
+      - laravel-net
+
+  kong-db:
+    image: postgres:15
+    container_name: kong-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong
+    volumes:
+      - kong-db-data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
+  kong:
+    image: kong:3.6
+    container_name: kong
+    restart: unless-stopped
+    depends_on:
+      - kong-db
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-db
+      KONG_PG_DATABASE: kong
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+      - "8444:8444"
+    volumes:
+      - ./.docker/kong/jwt-public.pem:/etc/kong/jwt-public.pem:ro
+    networks:
+      - laravel-net
+    command: >
+      sh -c "
+        kong migrations bootstrap ||
+        (kong migrations up && kong migrations finish) &&
+        kong start --vv
+      "
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  kong-initializer:
+    image: curlimages/curl:7.83.1
+    container_name: kong-init
+    command: /kong-init.sh
+    volumes:
+      - ./.docker/kong/kong-init.sh:/kong-init.sh
+      - ./.docker/kong/jwt-public.pem:/jwt-public.pem:ro
+    depends_on:
+      kong:
+        condition: service_healthy
+      user-nginx:
+        condition: service_started
+    networks:
+      - laravel-net
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5173
+    networks:
+      - laravel-net
+
+  localstack:
+    image: localstack/localstack:4.7.0
+    container_name: localstack
+    environment:
+      - AWS_DEFAULT_REGION=us-east-1
+      - SERVICES=s3
+      - GATEWAY_LISTEN=0.0.0.0:4566
+      - PERSISTENCE=true
+    ports:
+      - "4566-4583:4566-4583"
+    volumes:
+      - ./.docker/aws/localstack-data:/var/lib/localstack/state
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./.docker/aws/localstack-init:/etc/localstack/init/ready.d
+    networks:
+      - laravel-net
+
+  # ── OBSERVABILITY STACK (Grafana LGTM) ──────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./.docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - laravel-net
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./.docker/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - laravel-net
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail.yml
+    volumes:
+      - ./.docker/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - loki
+    networks:
+      - laravel-net
+
+  tempo:
+    image: grafana/tempo:2.4.2
+    container_name: tempo
+    restart: unless-stopped
+    command: -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./.docker/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP API
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      - prometheus
+    networks:
+      - laravel-net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - laravel-net
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - ./.docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./.docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - laravel-net
+
+networks:
+  laravel-net:
+    driver: bridge
+
+volumes:
+  user-db-data:
+  template-db-data:
+  file-db-data:
+  audit-db-data:
+  kong-db-data:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:

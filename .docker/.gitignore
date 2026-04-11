@@ -1,0 +1,5 @@
+# LocalStack persistent state (runtime-generated, not source)
+aws/localstack-data/
+
+# Kong runtime cache
+kong/cache/

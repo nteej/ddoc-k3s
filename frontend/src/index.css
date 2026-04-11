@@ -1,0 +1,156 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 60% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 60% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 60% 15%;
+
+    --primary: 220 84% 24%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 214 32% 95%;
+    --secondary-foreground: 220 60% 15%;
+
+    --muted: 214 32% 95%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 214 32% 95%;
+    --accent-foreground: 220 60% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 220 84% 24%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 min-h-screen;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-gray-200;
+  }
+
+  .glass-strong {
+    @apply bg-white border border-gray-200 shadow-sm;
+  }
+
+  .glass-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200;
+  }
+
+  .gradient-text {
+    @apply text-blue-900;
+  }
+
+  .btn-glass {
+    @apply bg-white border border-gray-200 rounded-lg px-4 py-2 transition-all duration-200 hover:bg-gray-100 hover:scale-105;
+  }
+}
+
+/* Editor styles - A4 Document Style */
+.editor-content {
+  @apply min-h-[600px] max-w-4xl mx-auto p-8 bg-white shadow-lg rounded-sm border border-gray-200 focus:outline-none;
+  font-family: 'Times New Roman', serif;
+  font-size: 12pt;
+  line-height: 1.6;
+  color: #000;
+  min-height: 29.7cm;
+  width: 21cm;
+  max-width: 21cm;
+}
+
+.editor-content h1, .editor-content h2, .editor-content h3, .editor-content h4, .editor-content h5, .editor-content h6 {
+  @apply font-bold mb-4 text-black;
+}
+
+.editor-content h1 { @apply text-3xl; }
+.editor-content h2 { @apply text-2xl; }
+.editor-content h3 { @apply text-xl; }
+.editor-content h4 { @apply text-lg; }
+.editor-content h5 { @apply text-base; }
+.editor-content h6 { @apply text-sm; }
+
+.editor-content p {
+  @apply mb-3 text-black;
+}
+
+.editor-content ul, .editor-content ol {
+  @apply ml-6 mb-3 text-black;
+}
+
+.editor-content ul { @apply list-disc; }
+.editor-content ol { @apply list-decimal; }
+
+.editor-content blockquote {
+  @apply border-l-4 border-gray-400 pl-4 italic my-4 text-gray-700;
+}
+
+.editor-content code {
+  @apply bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono;
+}
+
+.editor-content table {
+  @apply w-full border-collapse border border-gray-300 mb-4;
+}
+
+.editor-content th, .editor-content td {
+  @apply border border-gray-300 p-3 text-black;
+}
+
+.editor-content th {
+  @apply bg-gray-100 font-semibold;
+}
+
+.editor-content a {
+  @apply text-blue-700 underline hover:text-blue-900;
+}
+
+.editor-content img {
+  @apply max-w-full h-auto rounded-lg my-4;
+}
+
+.tag-placeholder {
+  @apply inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm border border-blue-300;
+}
+
+/* Subscript and superscript styles */
+.editor-content sub {
+  @apply text-xs align-sub;
+}
+
+.editor-content sup {
+  @apply text-xs align-super;
+}
+
+/* Placeholder styling for empty editor */
+.editor-content:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.editor-content:focus:before {
+  content: none;
+}
