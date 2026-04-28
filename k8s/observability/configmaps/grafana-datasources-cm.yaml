@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources-cm
+  namespace: observability
+data:
+  datasources.yml: |
+    apiVersion: 1
+
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        url: http://prometheus-svc.observability.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+        jsonData:
+          timeInterval: 15s
+          exemplarTraceIdDestinations:
+            - name: trace_id
+              datasourceUid: tempo
+
+      - name: Loki
+        type: loki
+        uid: loki
+        url: http://loki-svc.observability.svc.cluster.local:3100
+        access: proxy
+        jsonData:
+          derivedFields:
+            - datasourceUid: tempo
+              matcherRegex: "trace_id\":\"(\\w+)\""
+              name: TraceID
+              url: "${__value.raw}"
+              urlDisplayLabel: View Trace
+
+      - name: Tempo
+        type: tempo
+        uid: tempo
+        url: http://tempo-svc.observability.svc.cluster.local:3200
+        access: proxy
+        jsonData:
+          serviceMap:
+            datasourceUid: prometheus
+          nodeGraph:
+            enabled: true
+          lokiSearch:
+            datasourceUid: loki

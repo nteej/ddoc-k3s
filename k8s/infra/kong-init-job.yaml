@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kong-init
+  namespace: dynadoc
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: kong-init
+          image: curlimages/curl:7.83.1
+          command: ["/bin/sh", "/scripts/kong-init.sh"]
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: jwt-public
+              mountPath: /etc/kong-jwt
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: kong-init-cm
+            defaultMode: 0755
+        - name: jwt-public
+          secret:
+            secretName: kong-jwt-secret

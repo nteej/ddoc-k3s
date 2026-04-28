@@ -2,14 +2,20 @@
 
 use App\Infrastructure\Http\Controllers\FileController;
 use App\Infrastructure\Http\Middlewares\AuditMiddleware;
-use App\Infrastructure\Http\Middlewares\ExtractJwtClaimsMiddleware;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware([ExtractJwtClaimsMiddleware::class, AuditMiddleware::class])->group(function () {
-    Route::prefix('files')->controller(FileController::class)->group(function () {
-        Route::get('/filters', 'findByFilters');
-        Route::post('/async-generate', 'asyncGenerate');
-        Route::delete('/{fileId}', 'destroy');
-        Route::get('/download/{fileId}', 'download');
-    });
+// Viewer+: list and download files
+Route::middleware(['jwt.auth', 'rbac:viewer', AuditMiddleware::class])->group(function () {
+    Route::get('/files/filters',          [FileController::class, 'findByFilters']);
+    Route::get('/files/download/{fileId}', [FileController::class, 'download']);
+});
+
+// Editor+: generate documents (plan quota enforced)
+Route::middleware(['jwt.auth', 'rbac:editor', 'plan.limit', AuditMiddleware::class])->group(function () {
+    Route::post('/files/async-generate', [FileController::class, 'asyncGenerate']);
+});
+
+// Admin+: delete files
+Route::middleware(['jwt.auth', 'rbac:admin', AuditMiddleware::class])->group(function () {
+    Route::delete('/files/{fileId}', [FileController::class, 'destroy']);
 });

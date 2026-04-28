@@ -1,0 +1,282 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── PHP service tests ────────────────────────────────────────────────────
+
+  test-user-service:
+    name: Test / user-service
+    runs-on: ubuntu-24.04
+    if: >
+      github.event_name == 'pull_request' &&
+      contains(toJSON(github.event.pull_request.files.*.filename), 'backend/user-service')
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: user_service_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_pgsql, mbstring, zip, bcmath, intl, pcntl
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/user-service/vendor
+          key: composer-user-${{ hashFiles('backend/user-service/composer.lock') }}
+          restore-keys: composer-user-
+
+      - name: Install dependencies
+        working-directory: backend/user-service
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare .env
+        working-directory: backend/user-service
+        run: |
+          cp .env.example .env 2>/dev/null || cp .env.testing .env 2>/dev/null || true
+          php artisan key:generate --force
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=5432/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=user_service_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=postgres/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=postgres/' .env
+
+      - name: Run migrations
+        working-directory: backend/user-service
+        run: php artisan migrate --force
+
+      - name: Run tests
+        working-directory: backend/user-service
+        run: php artisan test --parallel
+
+  test-template-service:
+    name: Test / template-service
+    runs-on: ubuntu-24.04
+    if: >
+      github.event_name == 'pull_request' &&
+      contains(toJSON(github.event.pull_request.files.*.filename), 'backend/template-service')
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: template_service_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_pgsql, mbstring, zip, bcmath, intl, pcntl
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/template-service/vendor
+          key: composer-template-${{ hashFiles('backend/template-service/composer.lock') }}
+          restore-keys: composer-template-
+
+      - name: Install dependencies
+        working-directory: backend/template-service
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare .env
+        working-directory: backend/template-service
+        run: |
+          cp .env.example .env 2>/dev/null || true
+          php artisan key:generate --force
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=5432/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=template_service_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=postgres/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=postgres/' .env
+
+      - name: Run migrations
+        working-directory: backend/template-service
+        run: php artisan migrate --force
+
+      - name: Run tests
+        working-directory: backend/template-service
+        run: php artisan test --parallel
+
+  test-file-service:
+    name: Test / file-service
+    runs-on: ubuntu-24.04
+    if: >
+      github.event_name == 'pull_request' &&
+      contains(toJSON(github.event.pull_request.files.*.filename), 'backend/file-service')
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: file_service_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_pgsql, mbstring, zip, bcmath, intl, pcntl
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/file-service/vendor
+          key: composer-file-${{ hashFiles('backend/file-service/composer.lock') }}
+          restore-keys: composer-file-
+
+      - name: Install dependencies
+        working-directory: backend/file-service
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare .env
+        working-directory: backend/file-service
+        run: |
+          cp .env.example .env 2>/dev/null || true
+          php artisan key:generate --force
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=5432/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=file_service_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=postgres/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=postgres/' .env
+
+      - name: Run migrations
+        working-directory: backend/file-service
+        run: php artisan migrate --force
+
+      - name: Run tests
+        working-directory: backend/file-service
+        run: php artisan test --parallel
+
+  test-audit-service:
+    name: Test / audit-service
+    runs-on: ubuntu-24.04
+    if: >
+      github.event_name == 'pull_request' &&
+      contains(toJSON(github.event.pull_request.files.*.filename), 'backend/audit-service')
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: audit_service_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo, pdo_pgsql, mbstring, zip, bcmath, intl, pcntl
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/audit-service/vendor
+          key: composer-audit-${{ hashFiles('backend/audit-service/composer.lock') }}
+          restore-keys: composer-audit-
+
+      - name: Install dependencies
+        working-directory: backend/audit-service
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare .env
+        working-directory: backend/audit-service
+        run: |
+          cp .env.example .env 2>/dev/null || true
+          php artisan key:generate --force
+          sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+          sed -i 's/DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+          sed -i 's/DB_PORT=.*/DB_PORT=5432/' .env
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=audit_service_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=postgres/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=postgres/' .env
+
+      - name: Run migrations
+        working-directory: backend/audit-service
+        run: php artisan migrate --force
+
+      - name: Run tests
+        working-directory: backend/audit-service
+        run: php artisan test --parallel
+
+  # ─── Frontend lint + build ─────────────────────────────────────────────────
+
+  lint-frontend:
+    name: Lint + Build / frontend
+    runs-on: ubuntu-24.04
+    if: >
+      github.event_name == 'pull_request' &&
+      contains(toJSON(github.event.pull_request.files.*.filename), 'frontend')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build

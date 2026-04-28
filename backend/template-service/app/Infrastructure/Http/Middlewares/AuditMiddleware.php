@@ -23,12 +23,13 @@ class AuditMiddleware
                 $this->producer->send(
                     topic: 'audit.events',
                     payload: [
-                        'userId'     => $user['userId'] ?? null,
-                        'userName'   => $user['name'] ?? null,
-                        'action'     => $request->method() . ' ' . $request->path(),
-                        'service'    => env('DD_SERVICE', 'template-service'),
-                        'statusCode' => $response->getStatusCode(),
-                        'timestamp'  => now()->toIso8601String(),
+                        'userId'         => $user['userId'] ?? null,
+                        'userName'       => $user['name'] ?? null,
+                        'organizationId' => $user['organizationId'] ?? null,
+                        'action'         => $request->method() . ' ' . $request->path(),
+                        'service'        => env('DD_SERVICE', 'template-service'),
+                        'statusCode'     => $response->getStatusCode(),
+                        'timestamp'      => now()->toIso8601String(),
                     ]
                 );
             }

@@ -29,13 +29,14 @@ class UserLoggedConsumer extends Command
                 $body = $message->getBody();
 
                 $this->repository->store([
-                    'user_id'     => $body['id'] ?? null,
-                    'user_name'   => $body['name'] ?? null,
-                    'action'      => 'POST /api/auth/login',
-                    'service'     => 'user-service',
-                    'status_code' => 200,
-                    'event_type'  => 'user_login',
-                    'occurred_at' => now()->toIso8601String(),
+                    'user_id'         => $body['id'] ?? null,
+                    'user_name'       => $body['name'] ?? null,
+                    'organization_id' => $body['organizationId'] ?? null,
+                    'action'          => 'POST /api/auth/login',
+                    'service'         => 'user-service',
+                    'status_code'     => 200,
+                    'event_type'      => 'user_login',
+                    'occurred_at'     => now()->toIso8601String(),
                 ]);
 
                 echo "Login event stored for user: {$body['name']}" . PHP_EOL;

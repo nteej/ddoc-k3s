@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-consumer
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit-consumer
+  template:
+    metadata:
+      labels:
+        app: audit-consumer
+    spec:
+      containers:
+        - name: audit-consumer
+          image: REGISTRY/dynadoc/audit-service:latest
+          command: ["/bin/bash", "consumer-entrypoint.sh"]
+          env:
+            - name: DB_CONNECTION
+              value: pgsql
+            - name: DB_HOST
+              value: audit-db-svc
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: audit_service
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: audit-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: audit-app-secret
+                  key: APP_KEY
+            - name: APP_ENV
+              value: production
+            - name: KAFKA_BROKERS
+              value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-1.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-2.kafka-headless.dynadoc.svc.cluster.local:9092"
+          restartPolicy: Always

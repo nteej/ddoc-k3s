@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-init-cm
+  namespace: dynadoc
+data:
+  entrypoint.sh: |
+    #!/bin/bash
+
+    ZOOKEEPER_HOST="zookeeper-svc.dynadoc.svc.cluster.local:2181"
+    BOOTSTRAP_SERVER="kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092"
+    EXPECTED_BROKER_COUNT=3
+
+    echo "Waiting for brokers to register in Zookeeper..."
+
+    wait_for_brokers() {
+      local count=0
+
+      while [ "$count" -lt "$EXPECTED_BROKER_COUNT" ]; do
+        count=$(zookeeper-shell $ZOOKEEPER_HOST ls /brokers/ids 2>/dev/null \
+          | grep -oP '\[\K[^\]]*' | tr ',' '\n' | grep -v '^$' | wc -l)
+
+        echo "Brokers registered: $count/$EXPECTED_BROKER_COUNT"
+        sleep 3
+      done
+
+      echo "All brokers are registered!"
+    }
+
+    wait_for_brokers
+
+    create_topic() {
+      local TOPIC=$1
+      local PARTITIONS=$2
+      local REPLICATION=$3
+
+      kafka-topics --bootstrap-server "$BOOTSTRAP_SERVER" \
+        --topic "$TOPIC" \
+        --describe > /dev/null 2>&1
+
+      if [ $? -ne 0 ]; then
+        echo "Creating topic: $TOPIC"
+        kafka-topics --create \
+          --bootstrap-server "$BOOTSTRAP_SERVER" \
+          --replication-factor "$REPLICATION" \
+          --partitions "$PARTITIONS" \
+          --topic "$TOPIC"
+      else
+        echo "Topic $TOPIC already exists."
+      fi
+    }
+
+    create_topic "user.logged" 3 3
+    create_topic "template.requested" 3 3
+    create_topic "template.delivered" 3 3
+    create_topic "audit.events" 3 3
+    create_topic "webhook.dispatch" 3 3
+    create_topic "notification.dispatch" 3 3
+    create_topic "quota.exceeded" 3 3
+
+    echo "Topics created (or already existed)."

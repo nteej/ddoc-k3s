@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-cm
+  namespace: observability
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    remote_write: []
+
+    scrape_configs:
+      - job_name: prometheus
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: cadvisor
+        static_configs:
+          - targets: ['cadvisor-svc.observability.svc.cluster.local:8080']
+
+      - job_name: tempo
+        static_configs:
+          - targets: ['tempo-svc.observability.svc.cluster.local:3200']

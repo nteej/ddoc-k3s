@@ -30,6 +30,7 @@ class AuthController extends BaseController
             'id'    => $output->id,
             'name'  => $output->name,
             'email' => $output->email,
+            'role'  => $output->role,
         ])->cookie($this->makeTokenCookie($output->token));
     }
 
@@ -45,6 +46,7 @@ class AuthController extends BaseController
             'id'    => $output->id,
             'name'  => $output->name,
             'email' => $output->email,
+            'role'  => $output->role,
         ], 201)->cookie($this->makeTokenCookie($output->token));
     }
 
@@ -56,6 +58,7 @@ class AuthController extends BaseController
             'id'    => $user['userId'],
             'name'  => $user['name'],
             'email' => $user['email'],
+            'role'  => $user['role'] ?? 'viewer',
         ]);
     }
 

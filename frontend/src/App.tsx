@@ -19,6 +19,11 @@ import ApiPage from "@/components/ApiPage";
 import GeneratePage from "@/components/GeneratePage";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
+import ArchitecturePage from "./pages/ArchitecturePage";
+import OrganizationPage from "./pages/OrganizationPage";
+import InvitationPage from "./pages/InvitationPage";
+import ApiKeysPage from "./pages/ApiKeysPage";
+import WebhooksPage from "./pages/WebhooksPage";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +40,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/" element={<LandingPage />} />
+            <Route path="/architecture" element={<ArchitecturePage />} />
             <Route path="/documents" element={
               <ProtectedLayout>
                 <DocumentsPage />
@@ -68,6 +74,22 @@ const App = () => (
             <Route path="/profile" element={
               <ProtectedLayout>
                 <ProfilePage />
+              </ProtectedLayout>
+            } />
+            <Route path="/organization" element={
+              <ProtectedLayout>
+                <OrganizationPage />
+              </ProtectedLayout>
+            } />
+            <Route path="/invitations/:token" element={<InvitationPage />} />
+            <Route path="/api-keys" element={
+              <ProtectedLayout>
+                <ApiKeysPage />
+              </ProtectedLayout>
+            } />
+            <Route path="/webhooks" element={
+              <ProtectedLayout>
+                <WebhooksPage />
               </ProtectedLayout>
             } />
             <Route path="*" element={<NotFound />} />

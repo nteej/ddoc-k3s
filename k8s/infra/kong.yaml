@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong
+  template:
+    metadata:
+      labels:
+        app: kong
+    spec:
+      # Wait for kong-db to be ready before running migrations
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z kong-db-svc 5432; do
+                echo "Waiting for kong-db..."
+                sleep 2
+              done
+      containers:
+        - name: kong
+          image: kong:3.6
+          ports:
+            - containerPort: 8000
+              name: proxy
+            - containerPort: 8443
+              name: proxy-ssl
+            - containerPort: 8001
+              name: admin
+            - containerPort: 8444
+              name: admin-ssl
+          env:
+            - name: KONG_DATABASE
+              value: postgres
+            - name: KONG_PG_HOST
+              value: kong-db-svc
+            - name: KONG_PG_DATABASE
+              value: kong
+            - name: KONG_PG_USER
+              value: kong
+            - name: KONG_PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kong-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: KONG_PROXY_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_ADMIN_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_PROXY_ERROR_LOG
+              value: /dev/stderr
+            - name: KONG_ADMIN_ERROR_LOG
+              value: /dev/stderr
+            - name: KONG_ADMIN_LISTEN
+              value: "0.0.0.0:8001"
+          command:
+            - sh
+            - -c
+            - |
+              kong migrations bootstrap ||
+              (kong migrations up && kong migrations finish) &&
+              exec kong start --vv
+          volumeMounts:
+            - name: jwt-public
+              mountPath: /etc/kong/jwt-public.pem
+              subPath: jwt-public.pem
+              readOnly: true
+          readinessProbe:
+            exec:
+              command: ["kong", "health"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 10
+          livenessProbe:
+            exec:
+              command: ["kong", "health"]
+            initialDelaySeconds: 60
+            periodSeconds: 15
+      volumes:
+        - name: jwt-public
+          secret:
+            secretName: kong-jwt-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-svc
+  namespace: dynadoc
+spec:
+  selector:
+    app: kong
+  type: NodePort
+  ports:
+    - name: proxy
+      port: 8000
+      targetPort: 8000
+      nodePort: 30800
+    - name: proxy-ssl
+      port: 8443
+      targetPort: 8443
+      nodePort: 30843
+    - name: admin
+      port: 8001
+      targetPort: 8001

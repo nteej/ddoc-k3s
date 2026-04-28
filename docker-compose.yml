@@ -90,6 +90,100 @@ services:
     networks:
       - laravel-net
 
+  # API KEY SERVICE
+  api-key-app:
+    build: ./backend/api-key-service
+    container_name: api-key-app
+    depends_on:
+      - api-key-db
+      - user-db
+      - redis
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      OWN_DB_HOST: api-key-db
+      OWN_DB_PORT: 5432
+      OWN_DB_DATABASE: apikey_service
+      OWN_DB_USERNAME: postgres
+      OWN_DB_PASSWORD: postgres
+      USER_DB_HOST: user-db
+      USER_DB_PORT: 5432
+      USER_DB_DATABASE: user_service
+      USER_DB_USERNAME: postgres
+      USER_DB_PASSWORD: postgres
+      REDIS_ADDR: redis:6379
+      KAFKA_BROKERS: kafka1:9092,kafka2:9093,kafka3:9094
+      JWT_PRIVATE_KEY_PATH: /etc/jwt/jwt-private.pem
+      JWT_PUBLIC_KEY_PATH: /etc/jwt/jwt-public.pem
+      PORT: "8086"
+      DEFAULT_RATE_LIMIT_PER_MINUTE: "60"
+      DEFAULT_MONTHLY_QUOTA: "1000"
+    volumes:
+      - ./backend/user-service/storage/oauth/jwt-private.pem:/etc/jwt/jwt-private.pem:ro
+      - ./backend/user-service/storage/oauth/jwt-public.pem:/etc/jwt/jwt-public.pem:ro
+    ports:
+      - "8086:8086"
+    networks:
+      - laravel-net
+
+  api-key-db:
+    image: postgres:15
+    container_name: api-key-db
+    restart: always
+    environment:
+      POSTGRES_DB: apikey_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - api-key-db-data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
+  # WEBHOOK SERVICE
+  webhook-app:
+    build: ./backend/webhook-service
+    container_name: webhook-app
+    depends_on:
+      - webhook-db
+      - kafka1
+      - kafka2
+      - kafka3
+    environment:
+      DB_HOST: webhook-db
+      DB_PORT: 5432
+      DB_DATABASE: webhook_service
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      KAFKA_BROKERS: kafka1:9092,kafka2:9093,kafka3:9094
+      JWT_PUBLIC_KEY_PATH: /etc/jwt/jwt-public.pem
+      PORT: "8085"
+      MAX_WEBHOOK_RETRIES: "5"
+      DELIVERY_WORKERS: "5"
+    volumes:
+      - ./.docker/kong/jwt-public.pem:/etc/jwt/jwt-public.pem:ro
+    ports:
+      - "8085:8085"
+    networks:
+      - laravel-net
+
+  webhook-db:
+    image: postgres:15
+    container_name: webhook-db
+    restart: always
+    environment:
+      POSTGRES_DB: webhook_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - webhook-db-data:/var/lib/postgresql/data
+    networks:
+      - laravel-net
+
   # KAFKA CONSUMERS (auto-started, restart on crash)
   template-consumer:
     build: ./backend/template-service
@@ -471,13 +565,7 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - HOST=0.0.0.0
-      - PORT=5173
+      - "5173:80"
     networks:
       - laravel-net
 
@@ -495,6 +583,19 @@ services:
       - ./.docker/aws/localstack-data:/var/lib/localstack/state
       - /var/run/docker.sock:/var/run/docker.sock
       - ./.docker/aws/localstack-init:/etc/localstack/init/ready.d
+    networks:
+      - laravel-net
+
+  # SWAGGER UI
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.17.0
+    container_name: swagger-ui
+    restart: unless-stopped
+    environment:
+      URL: /openapi.yaml
+      BASE_URL: /docs
+    volumes:
+      - ./.docker/swagger/openapi.yaml:/usr/share/nginx/html/openapi.yaml:ro
     networks:
       - laravel-net
 
@@ -606,6 +707,8 @@ volumes:
   template-db-data:
   file-db-data:
   audit-db-data:
+  api-key-db-data:
+  webhook-db-data:
   kong-db-data:
   prometheus-data:
   loki-data:

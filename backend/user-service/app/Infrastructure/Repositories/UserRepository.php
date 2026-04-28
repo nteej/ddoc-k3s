@@ -28,6 +28,9 @@ class UserRepository implements UserRepositoryInterface
                 'password',
                 'company_id',
                 'photo_url',
+                'current_organization_id',
+                'provider',
+                'provider_id',
             ]);
 
         foreach ($filters as $key => $value) {
@@ -47,6 +50,9 @@ class UserRepository implements UserRepositoryInterface
                 'password',
                 'company_id',
                 'photo_url',
+                'current_organization_id',
+                'provider',
+                'provider_id',
             ]);
 
         foreach ($filters as $key => $value) {
@@ -55,33 +61,45 @@ class UserRepository implements UserRepositoryInterface
 
         $userData = $query->first();
 
-        if (! $userData) {
+        if (!$userData) {
             return null;
         }
 
         return User::restore(
-            id: $userData->id,
-            name: $userData->name,
-            email: $userData->email,
-            password: $userData->password,
-            companyId: $userData->company_id,
-            photoUrl: $userData->photo_url
+            id:                    $userData->id,
+            name:                  $userData->name,
+            email:                 $userData->email,
+            password:              $userData->password,
+            companyId:             $userData->company_id,
+            photoUrl:              $userData->photo_url,
+            currentOrganizationId: $userData->current_organization_id ?? null,
+            provider:              $userData->provider ?? null,
+            providerId:            $userData->provider_id ?? null,
         );
     }
 
     public function insert(User $user): string
     {
-        DB::table("users")
-            ->insert([
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'password' => $user->password,
-                'company_id' => $user->companyId,
-                'photo_url' => $user->photoUrl
-            ]);
+        DB::table('users')->insert([
+            'id'                      => $user->id,
+            'name'                    => $user->name,
+            'email'                   => $user->email,
+            'password'                => $user->password,
+            'company_id'              => $user->companyId,
+            'photo_url'               => $user->photoUrl,
+            'current_organization_id' => $user->currentOrganizationId,
+            'provider'                => $user->provider,
+            'provider_id'             => $user->providerId,
+        ]);
 
         return $user->id;
+    }
+
+    public function updateOrganization(string $userId, string $organizationId): void
+    {
+        DB::table('users')
+            ->where('id', $userId)
+            ->update(['current_organization_id' => $organizationId, 'updated_at' => now()]);
     }
 
     public function update(User $user): bool

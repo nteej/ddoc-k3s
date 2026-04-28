@@ -18,10 +18,14 @@ class PublishUserLoginToKafka
      */
     public function handle(UserLoggedIn $event): void
     {
-        $this->producer->send(
-            topic: 'user.logged',
-            payload: $event->outputDTO->toArray(),
-            key: (string) $event->outputDTO->id
-        );
+        try {
+            $this->producer->send(
+                topic: 'user.logged',
+                payload: $event->outputDTO->toArray(),
+                key: (string) $event->outputDTO->id
+            );
+        } catch (\Throwable) {
+            // Kafka audit is best-effort — never block the login response
+        }
     }
 }

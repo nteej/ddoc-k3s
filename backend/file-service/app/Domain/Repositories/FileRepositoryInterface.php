@@ -16,6 +16,8 @@ interface FileRepositoryInterface
 
     public function findOneById(string $id): ?File;
 
+    public function findExpired(): Collection;
+
     public function insert(File $context): string;
 
     public function update(File $context): bool;

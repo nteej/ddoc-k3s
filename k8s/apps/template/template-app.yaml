@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: template-app
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: template-app
+  template:
+    metadata:
+      labels:
+        app: template-app
+    spec:
+      initContainers:
+        - name: copy-public
+          image: REGISTRY/dynadoc/template-service:latest
+          command:
+            - sh
+            - -c
+            - "cp -r /var/www/html/public/. /mnt/public/ && chown -R 33:33 /mnt/public"
+          volumeMounts:
+            - name: public-files
+              mountPath: /mnt/public
+      containers:
+        - name: php-fpm
+          image: REGISTRY/dynadoc/template-service:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: DB_CONNECTION
+              value: pgsql
+            - name: DB_HOST
+              value: template-db-svc
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: template_service
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: template-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: template-app-secret
+                  key: APP_KEY
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: "false"
+            - name: REDIS_HOST
+              value: redis-svc
+            - name: REDIS_PORT
+              value: "6379"
+            - name: QUEUE_CONNECTION
+              value: redis
+            - name: KAFKA_BROKERS
+              value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-1.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-2.kafka-headless.dynadoc.svc.cluster.local:9092"
+            - name: AWS_ACCESS_KEY_ID
+              value: test
+            - name: AWS_SECRET_ACCESS_KEY
+              value: test
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+            - name: AWS_BUCKET
+              value: files
+            - name: AWS_ENDPOINT
+              value: http://localstack-svc.dynadoc.svc.cluster.local:4566
+            - name: AWS_USE_PATH_STYLE_ENDPOINT
+              value: "true"
+            - name: FILESYSTEM_DISK
+              value: s3
+            - name: OTEL_PHP_AUTOLOAD_ENABLED
+              value: "true"
+            - name: OTEL_SERVICE_NAME
+              value: template-service
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://tempo-svc.observability.svc.cluster.local:4318
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/protobuf
+            - name: OTEL_PROPAGATORS
+              value: baggage,tracecontext
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp
+          volumeMounts:
+            - name: public-files
+              mountPath: /var/www/html/public
+
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: template.conf
+            - name: public-files
+              mountPath: /var/www/html/public
+              readOnly: true
+
+      volumes:
+        - name: public-files
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: nginx-configs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: template-svc
+  namespace: dynadoc
+spec:
+  selector:
+    app: template-app
+  ports:
+    - port: 80
+      targetPort: 80

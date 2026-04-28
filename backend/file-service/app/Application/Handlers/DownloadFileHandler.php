@@ -13,29 +13,40 @@ final readonly class DownloadFileHandler
 {
     public function __construct(
         private FileRepositoryInterface $fileRepository,
-        private FileStorageService $fileStorageService
-    ) {
-    }
+        private FileStorageService      $fileStorageService,
+    ) {}
 
     public function execute(string $fileId): object
     {
-        $file = $this->fileRepository->findAllUsingFilters([
-            'id' => $fileId
-        ])[0];
+        $file = $this->fileRepository->findAllUsingFilters(['id' => $fileId])[0] ?? null;
 
         if (!$file instanceof File) {
-            throw new Exception("Arquivo com ID {$fileId} não encontrado.");
+            throw new Exception("File {$fileId} not found.");
         }
 
         if (empty($file->path)) {
-            throw new Exception("Arquivo com ID {$fileId} não possui caminho definido.");
+            throw new Exception("File {$fileId} has no storage path yet.");
         }
 
-        $fileContent = $this->fileStorageService->download($file->path);
+        $disk = $file->storageDisk;
+
+        // For S3-compatible disks return a presigned URL so PHP doesn't proxy the bytes
+        $presignedUrl = $this->fileStorageService->temporaryUrl($file->path, $disk);
+        if ($presignedUrl) {
+            return (object)[
+                'name'         => $file->name,
+                'content'      => null,
+                'presigned_url' => $presignedUrl,
+            ];
+        }
+
+        // Local disk — stream content directly
+        $content = $this->fileStorageService->download($file->path, $disk);
 
         return (object)[
-            'name' => $file->name,
-            'content' => $fileContent,
+            'name'         => $file->name,
+            'content'      => $content,
+            'presigned_url' => null,
         ];
     }
 }

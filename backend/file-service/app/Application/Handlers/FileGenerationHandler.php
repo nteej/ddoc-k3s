@@ -12,6 +12,7 @@ use App\Domain\Services\FileGenerationService;
 use App\Domain\Services\FileStorageService;
 use App\Domain\Services\FileTagsReplacementService;
 use App\Domain\Services\FileTagsValidationService;
+use App\Infrastructure\Kafka\Producers\KafkaProducer;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -21,10 +22,10 @@ final readonly class FileGenerationHandler
 
     public function __construct(
         private FileRepositoryInterface $fileRepository,
-        private FileGenerationService $fileGeneration,
-        private FileStorageService $fileStorage,
-    ) {
-    }
+        private FileGenerationService   $fileGeneration,
+        private FileStorageService      $fileStorage,
+        private KafkaProducer           $kafka,
+    ) {}
 
     public function execute(FileContentInputDTO $input): void
     {
@@ -69,17 +70,34 @@ final readonly class FileGenerationHandler
     {
         $this->updateFile($file, [
             'readyToDownload' => false,
-            'status' => FileStatusEnum::ERROR,
-            'errors' => json_encode($errorMessages),
+            'status'          => FileStatusEnum::ERROR,
+            'errors'          => json_encode($errorMessages),
+        ]);
+
+        $this->dispatchWebhookEvent('document.failed', $file, ['errors' => $errorMessages]);
+        $this->dispatchNotification('document.failed', $file, [
+            'title' => 'Document generation failed',
+            'body'  => "Your document \"{$file->name}\" could not be generated.",
+            'data'  => ['fileId' => $file->id, 'errors' => $errorMessages],
         ]);
     }
 
     private function setSuccessFileUploaded(File $file, string $path): void
     {
+        $disk = $this->fileStorage->activeDisk();
         $this->updateFile($file, [
-            'path' => $path,
+            'path'            => $path,
+            'storageDisk'     => $disk,
+            'fileSize'        => $this->fileStorage->fileSize($path, $disk),
             'readyToDownload' => true,
-            'status' => FileStatusEnum::READY,
+            'status'          => FileStatusEnum::READY,
+        ]);
+
+        $this->dispatchWebhookEvent('document.generated', $file);
+        $this->dispatchNotification('document.generated', $file, [
+            'title' => 'Document ready',
+            'body'  => "Your document \"{$file->name}\" is ready to download.",
+            'data'  => ['fileId' => $file->id, 'fileName' => $file->name],
         ]);
     }
 
@@ -87,5 +105,34 @@ final readonly class FileGenerationHandler
     {
         $updatedFile = $file->update(...$attributes);
         $this->fileRepository->update($updatedFile);
+    }
+
+    private function dispatchWebhookEvent(string $event, File $file, array $extra = []): void
+    {
+        if (!$file->organizationId) return;
+
+        try {
+            $this->kafka->send('webhook.dispatch', array_merge([
+                'event'           => $event,
+                'organizationId'  => $file->organizationId,
+                'fileId'          => $file->id,
+                'fileName'        => $file->name,
+                'templateId'      => $file->templateId,
+                'timestamp'       => now()->toIso8601String(),
+            ], $extra));
+        } catch (\Throwable) {}
+    }
+
+    private function dispatchNotification(string $type, File $file, array $payload): void
+    {
+        if (!$file->organizationId) return;
+
+        try {
+            $this->kafka->send('notification.dispatch', array_merge([
+                'type'           => $type,
+                'organizationId' => $file->organizationId,
+                'userId'         => $file->userId ?? null,
+            ], $payload));
+        } catch (\Throwable) {}
     }
 }

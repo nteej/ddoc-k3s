@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: file-db
+  namespace: dynadoc
+spec:
+  serviceName: file-db-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: file-db
+  template:
+    metadata:
+      labels:
+        app: file-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: file-db-secret
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-db-svc
+  namespace: dynadoc
+spec:
+  selector:
+    app: file-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None

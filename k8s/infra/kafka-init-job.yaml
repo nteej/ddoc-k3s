@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-init
+  namespace: dynadoc
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: kafka-init
+          image: confluentinc/cp-kafka:7.6.0
+          command: ["/bin/bash", "/scripts/entrypoint.sh"]
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: kafka-init-cm
+            defaultMode: 0755

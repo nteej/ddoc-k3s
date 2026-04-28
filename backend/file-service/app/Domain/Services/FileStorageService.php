@@ -1,81 +1,89 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Services;
 
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 use Exception;
 
 class FileStorageService
 {
+    private string $disk;
     private string $tmpPath;
 
     public function __construct()
     {
+        $this->disk    = config('filesystems.default', 'local');
         $this->tmpPath = storage_path('app/public/tmp');
     }
 
-    public function upload(string $fileName, ?string $destinationPath = null): string
+    public function activeDisk(): string
     {
-        $localFile = $this->tmpPath . DIRECTORY_SEPARATOR . $fileName;
+        return $this->disk;
+    }
+
+    public function upload(string $fileName, ?string $storagePath = null): string
+    {
+        $localFile   = $this->tmpPath . DIRECTORY_SEPARATOR . $fileName;
+        $storagePath = $storagePath ?? 'documents/' . $fileName;
 
         if (!file_exists($localFile)) {
-            throw new Exception("Arquivo não encontrado no diretório temporário: {$localFile}");
+            throw new Exception("Temp file not found: {$localFile}");
         }
 
-        $destinationPath ??= $fileName;
-
         try {
-            Storage::disk('s3')->put($destinationPath, file_get_contents($localFile));
-            $this->deleteLocalFile($localFile);
-
-            return $destinationPath;
+            Storage::disk($this->disk)->put($storagePath, file_get_contents($localFile));
+            @unlink($localFile);
+            return $storagePath;
         } catch (Exception $e) {
-            logger()->error("Erro ao enviar arquivo para S3: " . $e->getMessage());
-            throw new Exception("Erro ao enviar arquivo para S3");
+            logger()->error("Storage upload failed [{$this->disk}]: " . $e->getMessage());
+            throw new Exception("Failed to upload file to storage");
         }
     }
 
-    public function download(string $s3Path): string
+    public function download(string $storagePath, string $disk): string
     {
         try {
-            if (!Storage::disk('s3')->exists($s3Path)) {
-                throw new Exception("Arquivo não encontrado na S3: {$s3Path}");
+            if (!Storage::disk($disk)->exists($storagePath)) {
+                throw new Exception("File not found on disk [{$disk}]: {$storagePath}");
             }
-
-            return Storage::disk('s3')->get($s3Path);
+            return Storage::disk($disk)->get($storagePath);
         } catch (Exception $e) {
-            logger()->error("Erro ao baixar arquivo da S3: " . $e->getMessage());
-            throw new Exception("Erro ao baixar arquivo da S3");
+            logger()->error("Storage download failed [{$disk}]: " . $e->getMessage());
+            throw new Exception("Failed to download file from storage");
         }
     }
 
-    public function removeFromS3(string $s3Path): bool
+    public function delete(string $storagePath, string $disk): bool
     {
         try {
-            if (!Storage::disk('s3')->exists($s3Path)) {
-                throw new Exception("Arquivo não encontrado na S3: {$s3Path}");
+            if (!Storage::disk($disk)->exists($storagePath)) {
+                return true; // already gone
             }
-
-            return Storage::disk('s3')->delete($s3Path);
+            return Storage::disk($disk)->delete($storagePath);
         } catch (Exception $e) {
-            logger()->error("Erro ao remover arquivo da S3: " . $e->getMessage());
-            throw new Exception("Erro ao remover arquivo da S3");
+            logger()->error("Storage delete failed [{$disk}]: " . $e->getMessage());
+            return false;
         }
     }
 
-    public function deleteLocalFile(string $fullPath): bool
+    /** Returns a time-limited presigned URL for S3-compatible disks, or null for local. */
+    public function temporaryUrl(string $storagePath, string $disk, int $minutes = 60): ?string
     {
-        if (!file_exists($fullPath)) {
-            throw new Exception("Arquivo local não encontrado: {$fullPath}");
-        }
-
         try {
-            return unlink($fullPath);
-        } catch (Exception $e) {
-            logger()->error("Erro ao apagar arquivo local: " . $e->getMessage());
-            throw new Exception("Erro ao apagar arquivo local");
+            return Storage::disk($disk)->temporaryUrl($storagePath, now()->addMinutes($minutes));
+        } catch (\Throwable) {
+            return null; // local disk does not support presigned URLs
+        }
+    }
+
+    public function fileSize(string $storagePath, string $disk): int
+    {
+        try {
+            return Storage::disk($disk)->size($storagePath);
+        } catch (\Throwable) {
+            return 0;
         }
     }
 }

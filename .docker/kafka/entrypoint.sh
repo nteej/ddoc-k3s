@@ -46,5 +46,8 @@ create_topic "user.logged" 3 3
 create_topic "template.requested" 3 3
 create_topic "template.delivered" 3 3
 create_topic "audit.events" 3 3
+create_topic "webhook.dispatch" 3 3
+create_topic "notification.dispatch" 3 3
+create_topic "quota.exceeded" 3 3
 
 echo "Tópico criado com sucesso (ou já existia)."

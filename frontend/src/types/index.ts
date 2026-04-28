@@ -1,9 +1,68 @@
 
+export type Role = 'owner' | 'admin' | 'editor' | 'viewer';
+
+export interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown> | null;
+  read_at: string | null;
+  created_at: string;
+  organization_id: string | null;
+}
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  role: Role;
+  last_used_at: string | null;
+  expires_at: string | null;
+}
+
+export type WebhookEvent = 'document.generated' | 'document.failed' | 'member.invited' | 'member.joined';
+
+export interface Webhook {
+  id: string;
+  url: string;
+  events: WebhookEvent[];
+  active: boolean;
+  secret: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  webhook_id: string;
+  event: string;
+  status: 'pending' | 'success' | 'failed';
+  response_code: number | null;
+  attempts: number;
+  created_at: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  max_members?: number;
+}
+
+export interface OrgMember {
+  id: string;
+  name: string;
+  email: string;
+  photo_url: string | null;
+  role: Role;
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   avatar?: string;
+  organization?: Organization;
+  role?: Role;
 }
 
 export interface Company {

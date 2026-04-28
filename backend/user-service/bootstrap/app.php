@@ -17,10 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(HandleCors::class);
         $middleware->alias([
             'jwt.auth' => ExtractJwtClaimsMiddleware::class,
+            'rbac'     => \App\Infrastructure\Http\Middlewares\RbacMiddleware::class,
         ]);
 
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->withCommands([
+        __DIR__ . '/../app/Infrastructure/Kafka/Consumers',
     ])->create();

@@ -1,0 +1,1473 @@
+openapi: 3.0.3
+info:
+  title: DynaDoc Flow API
+  description: |
+    Document generation platform API. Supports both cookie-based JWT authentication
+    (browser sessions) and API key authentication (programmatic access via `ddk_` prefixed keys).
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000
+    description: Local (Kong gateway)
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: RS256 JWT set by the login endpoint
+    apiKeyAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: ddk_<key>
+      description: API key with `ddk_` prefix. Pass as `Authorization: Bearer ddk_<key>` or `X-Api-Key: ddk_<key>`
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [owner, admin, member]
+        organization_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        plan:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, member]
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    ApiKeyCreated:
+      allOf:
+        - $ref: '#/components/schemas/ApiKey'
+        - type: object
+          properties:
+            key:
+              type: string
+              description: Plain-text key (shown once only). Begins with `ddk_`.
+              example: ddk_abc123...
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+            enum:
+              - document.generated
+              - document.failed
+              - template.created
+              - template.updated
+              - template.deleted
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    WebhookDelivery:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        webhook_id:
+          type: string
+          format: uuid
+        event:
+          type: string
+        payload:
+          type: object
+        attempt_count:
+          type: integer
+        status:
+          type: string
+          enum: [pending, processing, delivered, failed]
+        last_status_code:
+          type: integer
+          nullable: true
+        last_response:
+          type: string
+          nullable: true
+        next_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Template:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        context_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Context:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: integer
+          description: |
+            Tag data type:
+            - `1` = Text
+            - `2` = Number
+            - `3` = Date
+            - `4` = Select
+            - `5` = Email
+            - `6` = Long Text
+          enum: [1, 2, 3, 4, 5, 6]
+        context_id:
+          type: string
+          format: uuid
+          nullable: true
+        options:
+          type: array
+          items:
+            type: string
+          description: Available options (only for type=4 Select)
+        created_at:
+          type: string
+          format: date-time
+
+    Section:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        template_id:
+          type: string
+          format: uuid
+        html_content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    File:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        template_id:
+          type: string
+          format: uuid
+        status:
+          type: integer
+          description: |
+            - `1` = Processing
+            - `2` = Ready
+            - `3` = Error
+          enum: [1, 2, 3]
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        service:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        event_type:
+          type: string
+        payload:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    UsageStats:
+      type: object
+      properties:
+        organization_id:
+          type: string
+          format: uuid
+        month:
+          type: string
+          example: "2026-04"
+        docs_generated:
+          type: integer
+        monthly_limit:
+          type: integer
+        quota_exceeded:
+          type: boolean
+
+security:
+  - cookieAuth: []
+  - apiKeyAuth: []
+
+tags:
+  - name: Auth
+    description: Authentication and session management
+  - name: Organization
+    description: Organization and member management
+  - name: API Keys
+    description: Programmatic access key management
+  - name: Webhooks
+    description: Outbound webhook subscription management
+  - name: Templates
+    description: Document template CRUD
+  - name: Contexts
+    description: Template context/category CRUD
+  - name: Tags
+    description: Template tag (field definition) CRUD
+  - name: Sections
+    description: Template section (HTML block) CRUD
+  - name: Files
+    description: Generated document file management
+  - name: Notifications
+    description: In-app notifications and real-time SSE stream
+  - name: Audit Logs
+    description: Immutable audit trail across all services
+  - name: Usage
+    description: API key usage and quota statistics
+
+paths:
+  # ── AUTH ───────────────────────────────────────────────────────────────────
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Authenticated. JWT set as `token` cookie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '422':
+          description: Validation error
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      responses:
+        '200':
+          description: Current authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthenticated
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (clears token cookie)
+      responses:
+        '200':
+          description: Logged out
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset email sent
+
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password with token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, email, password]
+              properties:
+                token:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Password reset successful
+        '422':
+          description: Invalid or expired token
+
+  # ── ORGANIZATION ───────────────────────────────────────────────────────────
+
+  /api/organizations/current:
+    get:
+      tags: [Organization]
+      summary: Get current organization
+      responses:
+        '200':
+          description: Current organization details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+
+    patch:
+      tags: [Organization]
+      summary: Update current organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Updated organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+
+  /api/organizations/current/members:
+    get:
+      tags: [Organization]
+      summary: List organization members
+      responses:
+        '200':
+          description: Member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /api/organizations/current/members/{userId}:
+    patch:
+      tags: [Organization]
+      summary: Update member role
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [admin, member]
+      responses:
+        '200':
+          description: Role updated
+
+    delete:
+      tags: [Organization]
+      summary: Remove member from organization
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Member removed
+
+  /api/organizations/switch/{orgId}:
+    post:
+      tags: [Organization]
+      summary: Switch active organization (multi-org users)
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Switched. New JWT set as `token` cookie.
+
+  /api/invitations:
+    post:
+      tags: [Organization]
+      summary: Invite a user to the organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                  enum: [admin, member]
+      responses:
+        '201':
+          description: Invitation sent
+
+  # ── API KEYS ───────────────────────────────────────────────────────────────
+
+  /api/api-keys:
+    get:
+      tags: [API Keys]
+      summary: List API keys for current organization
+      responses:
+        '200':
+          description: List of API keys (plain-text key NOT included)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApiKey'
+
+    post:
+      tags: [API Keys]
+      summary: Create a new API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, member]
+                  default: member
+                expires_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+      responses:
+        '201':
+          description: Created. The `key` field is shown once only.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyCreated'
+
+  /api/api-keys/{id}:
+    delete:
+      tags: [API Keys]
+      summary: Revoke an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Revoked
+
+  # ── WEBHOOKS ───────────────────────────────────────────────────────────────
+
+  /api/webhooks:
+    get:
+      tags: [Webhooks]
+      summary: List webhooks for current organization
+      responses:
+        '200':
+          description: Webhook list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+
+    post:
+      tags: [Webhooks]
+      summary: Register a new webhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: https://example.com/hooks/dynadoc
+                events:
+                  type: array
+                  items:
+                    type: string
+                  example: [document.generated, document.failed]
+                secret:
+                  type: string
+                  description: Optional signing secret. Deliveries will include `X-DynaDoc-Signature: sha256=<hmac>`.
+      responses:
+        '201':
+          description: Webhook created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+  /api/webhooks/{id}:
+    delete:
+      tags: [Webhooks]
+      summary: Delete a webhook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+
+  /api/webhooks/{id}/deliveries:
+    get:
+      tags: [Webhooks]
+      summary: List recent delivery attempts for a webhook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, delivered, failed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        '200':
+          description: Delivery list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebhookDelivery'
+
+  # ── TEMPLATES ──────────────────────────────────────────────────────────────
+
+  /api/templates:
+    post:
+      tags: [Templates]
+      summary: Create a template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                context_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /api/templates/filters:
+    get:
+      tags: [Templates]
+      summary: List / search templates
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: context_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Paginated template list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Template'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+
+  /api/templates/{id}:
+    patch:
+      tags: [Templates]
+      summary: Update a template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                context_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Updated template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+    delete:
+      tags: [Templates]
+      summary: Delete a template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+
+  # ── CONTEXTS ───────────────────────────────────────────────────────────────
+
+  /api/contexts:
+    post:
+      tags: [Contexts]
+      summary: Create a context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Context created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Context'
+
+  /api/contexts/filters:
+    get:
+      tags: [Contexts]
+      summary: List contexts
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Context list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Context'
+
+  /api/contexts/{id}:
+    patch:
+      tags: [Contexts]
+      summary: Update a context
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Context'
+
+    delete:
+      tags: [Contexts]
+      summary: Delete a context
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+
+  # ── TAGS ───────────────────────────────────────────────────────────────────
+
+  /api/tags:
+    post:
+      tags: [Tags]
+      summary: Create a tag (field definition)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                type:
+                  type: integer
+                  enum: [1, 2, 3, 4, 5, 6]
+                  description: "1=Text, 2=Number, 3=Date, 4=Select, 5=Email, 6=Long Text"
+                context_id:
+                  type: string
+                  format: uuid
+                options:
+                  type: array
+                  items:
+                    type: string
+                  description: Required when type=4 (Select)
+      responses:
+        '201':
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+
+  /api/tags/filters:
+    get:
+      tags: [Tags]
+      summary: List / filter tags
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3, 4, 5, 6]
+        - name: context_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tag list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+
+  /api/tags/{id}:
+    patch:
+      tags: [Tags]
+      summary: Update a tag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                options:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+
+    delete:
+      tags: [Tags]
+      summary: Delete a tag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+
+  # ── SECTIONS ───────────────────────────────────────────────────────────────
+
+  /api/sections:
+    post:
+      tags: [Sections]
+      summary: Create a section (HTML block within a template)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, template_id, html_content]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                template_id:
+                  type: string
+                  format: uuid
+                html_content:
+                  type: string
+                  description: HTML with `{{tagName}}` placeholders
+      responses:
+        '201':
+          description: Section created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+
+  /api/sections/filters:
+    get:
+      tags: [Sections]
+      summary: List sections
+      parameters:
+        - name: template_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: name
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Section list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Section'
+
+  /api/sections/{id}:
+    patch:
+      tags: [Sections]
+      summary: Update a section
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                html_content:
+                  type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+
+    delete:
+      tags: [Sections]
+      summary: Delete a section
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+
+  # ── FILES ──────────────────────────────────────────────────────────────────
+
+  /api/files/async-generate:
+    post:
+      tags: [Files]
+      summary: Trigger async document generation
+      description: |
+        Enqueues a PDF generation job via Kafka. Poll `GET /api/files/filters`
+        or listen to `document.generated` webhooks for completion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateId, payload]
+              properties:
+                templateId:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                  description: Human-readable name for the generated file
+                payload:
+                  type: object
+                  description: Key-value map of tag name → value for template substitution
+                  example:
+                    customerName: Acme Corp
+                    invoiceDate: 2026-04-25
+                    amount: "1250.00"
+      responses:
+        '202':
+          description: Generation queued. Returns the file record with status=1 (Processing).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+
+  /api/files/filters:
+    get:
+      tags: [Files]
+      summary: List / filter generated files
+      parameters:
+        - name: template_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+            description: "1=Processing, 2=Ready, 3=Error"
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Paginated file list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/File'
+                  total:
+                    type: integer
+
+  /api/files/download/{id}:
+    get:
+      tags: [Files]
+      summary: Download a generated file
+      description: Returns a redirect to the S3 presigned URL or streams the file directly.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: File stream
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '302':
+          description: Redirect to presigned S3 URL
+        '404':
+          description: File not found or not yet ready
+
+  /api/files/{id}:
+    delete:
+      tags: [Files]
+      summary: Delete a file
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+
+  # ── NOTIFICATIONS ──────────────────────────────────────────────────────────
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for current user
+      parameters:
+        - name: read
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+
+  /api/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Get unread notification count
+      responses:
+        '200':
+          description: Count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+
+  /api/notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Marked as read
+
+  /api/notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark all notifications as read
+      responses:
+        '200':
+          description: All marked as read
+
+  /api/notifications/stream:
+    get:
+      tags: [Notifications]
+      summary: Real-time notification stream (SSE)
+      description: |
+        Server-Sent Events endpoint. Connect with `EventSource` and listen for
+        `notification` events. The connection stays open until the client disconnects.
+
+        **Note:** API key authentication is not supported on SSE endpoints — use cookie auth.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: SSE stream
+          headers:
+            Content-Type:
+              schema:
+                type: string
+                example: text/event-stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  event: connected
+                  data: {}
+
+                  event: notification
+                  data: {"id":"...","title":"Document ready","body":"invoice.pdf is ready to download","read":false}
+
+  # ── AUDIT LOGS ─────────────────────────────────────────────────────────────
+
+  /api/audit-logs:
+    get:
+      tags: [Audit Logs]
+      summary: Query audit logs
+      parameters:
+        - name: service
+          in: query
+          schema:
+            type: string
+            enum: [user-service, template-service, file-service, audit-service, webhook-service, api-key-service]
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: eventType
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  total:
+                    type: integer
+
+  # ── USAGE ──────────────────────────────────────────────────────────────────
+
+  /api/usage:
+    get:
+      tags: [Usage]
+      summary: Get API usage statistics for current organization
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+            example: "2026-04"
+          description: Month in `YYYY-MM` format. Defaults to current month.
+      responses:
+        '200':
+          description: Usage stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageStats'

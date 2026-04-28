@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(HandleCors::class);
+        $middleware->alias([
+            'jwt.auth' => \App\Infrastructure\Http\Middlewares\ExtractJwtClaimsMiddleware::class,
+            'rbac'     => \App\Infrastructure\Http\Middlewares\RbacMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

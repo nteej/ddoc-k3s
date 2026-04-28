@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-consumer
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: file-consumer
+  template:
+    metadata:
+      labels:
+        app: file-consumer
+    spec:
+      containers:
+        - name: file-consumer
+          image: REGISTRY/dynadoc/file-service:latest
+          command: ["/bin/bash", "consumer-entrypoint.sh"]
+          env:
+            - name: DB_CONNECTION
+              value: pgsql
+            - name: DB_HOST
+              value: file-db-svc
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: file_service
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: file-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: file-app-secret
+                  key: APP_KEY
+            - name: APP_ENV
+              value: production
+            - name: KAFKA_BROKERS
+              value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-1.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-2.kafka-headless.dynadoc.svc.cluster.local:9092"
+            - name: AWS_ACCESS_KEY_ID
+              value: test
+            - name: AWS_SECRET_ACCESS_KEY
+              value: test
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+            - name: AWS_BUCKET
+              value: files
+            - name: AWS_ENDPOINT
+              value: http://localstack-svc.dynadoc.svc.cluster.local:4566
+            - name: AWS_USE_PATH_STYLE_ENDPOINT
+              value: "true"
+            - name: FILESYSTEM_DISK
+              value: s3
+          restartPolicy: Always

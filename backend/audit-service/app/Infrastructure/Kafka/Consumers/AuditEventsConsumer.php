@@ -29,13 +29,14 @@ class AuditEventsConsumer extends Command
                 $body = $message->getBody();
 
                 $this->repository->store([
-                    'user_id'     => $body['userId'] ?? null,
-                    'user_name'   => $body['userName'] ?? null,
-                    'action'      => $body['action'] ?? 'unknown',
-                    'service'     => $body['service'] ?? 'unknown',
-                    'status_code' => $body['statusCode'] ?? null,
-                    'event_type'  => 'http_request',
-                    'occurred_at' => $body['timestamp'] ?? now()->toIso8601String(),
+                    'user_id'         => $body['userId'] ?? null,
+                    'user_name'       => $body['userName'] ?? null,
+                    'organization_id' => $body['organizationId'] ?? null,
+                    'action'          => $body['action'] ?? 'unknown',
+                    'service'         => $body['service'] ?? 'unknown',
+                    'status_code'     => $body['statusCode'] ?? null,
+                    'event_type'      => 'http_request',
+                    'occurred_at'     => $body['timestamp'] ?? now()->toIso8601String(),
                 ]);
 
                 echo "Audit event stored: {$body['action']}" . PHP_EOL;

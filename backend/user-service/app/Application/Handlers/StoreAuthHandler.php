@@ -10,57 +10,62 @@ use App\Application\Events\UserLoggedIn;
 use App\Application\Services\JwtService;
 use App\Domain\Entities\User;
 use App\Domain\Repositories\UserRepositoryInterface;
+use App\Infrastructure\Repositories\OrganizationRepository;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Hash;
 
 final readonly class StoreAuthHandler
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
-    ) {
-    }
+        private UserRepositoryInterface $userRepository,
+        private OrganizationRepository  $organizationRepository,
+    ) {}
 
     public function execute(AuthInputDTO $input): AuthOutputDTO
     {
-        $user = $this->getExistingUser($input);
+        $user = $this->userRepository->findFirstUsingFilters(['email' => $input->email]);
 
-        if (empty($user) || ! Hash::check($input->password, $user->password)) {
+        if (empty($user) || !Hash::check($input->password, $user->password)) {
             throw new AuthenticationException('Invalid credentials');
         }
 
-        $jwt = $this->generateToken($user);
+        ['token' => $jwt, 'role' => $role] = $this->buildToken($user);
 
-        $outputDTO = $this->getAuthOutputDTO($user, $jwt);
+        $outputDTO = new AuthOutputDTO(
+            id:    $user->id,
+            name:  $user->name,
+            email: $user->email,
+            token: $jwt,
+            role:  $role,
+        );
 
         event(new UserLoggedIn($outputDTO));
 
         return $outputDTO;
     }
 
-    private function getExistingUser(AuthInputDTO $input): ?User
+    private function buildToken(User $user): array
     {
-        return $this->userRepository->findFirstUsingFilters([
-            'email' => $input->email
-        ]);
-    } 
+        $orgId   = $user->currentOrganizationId;
+        $orgSlug = null;
+        $role    = 'viewer';
 
-    private function generateToken(User $user): string
-    {
-        return app(JwtService::class)->generateToken([
-            'userId' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'companyId' => $user->companyId,
-        ]);
-    }
+        if ($orgId) {
+            $org    = $this->organizationRepository->findById($orgId);
+            $member = $this->organizationRepository->findMember($orgId, $user->id);
+            $orgSlug = $org?->slug;
+            $role    = $member?->role ?? 'viewer';
+        }
 
-    private function getAuthOutputDTO(User $user, string $jwt): AuthOutputDTO
-    {
-        return new AuthOutputDTO(
-            id: $user->id,
-            name: $user->name,
-            email: $user->email,
-            token: $jwt
-        );
+        $token = app(JwtService::class)->generateToken([
+            'userId'           => $user->id,
+            'name'             => $user->name,
+            'email'            => $user->email,
+            'organizationId'   => $orgId,
+            'organizationSlug' => $orgSlug,
+            'role'             => $role,
+        ]);
+
+        return ['token' => $token, 'role' => $role];
     }
 }

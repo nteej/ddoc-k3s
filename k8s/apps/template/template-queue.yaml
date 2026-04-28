@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: template-queue
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: template-queue
+  template:
+    metadata:
+      labels:
+        app: template-queue
+    spec:
+      containers:
+        - name: template-queue
+          image: REGISTRY/dynadoc/template-service:latest
+          command: ["/bin/bash", "queue-entrypoint.sh"]
+          env:
+            - name: DB_CONNECTION
+              value: pgsql
+            - name: DB_HOST
+              value: template-db-svc
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: template_service
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: template-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: template-app-secret
+                  key: APP_KEY
+            - name: APP_ENV
+              value: production
+            - name: REDIS_HOST
+              value: redis-svc
+            - name: REDIS_PORT
+              value: "6379"
+            - name: QUEUE_CONNECTION
+              value: redis
+          restartPolicy: Always

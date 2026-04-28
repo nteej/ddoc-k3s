@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: audit-db
+  namespace: dynadoc
+spec:
+  serviceName: audit-db-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit-db
+  template:
+    metadata:
+      labels:
+        app: audit-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: audit-db-secret
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-db-svc
+  namespace: dynadoc
+spec:
+  selector:
+    app: audit-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None

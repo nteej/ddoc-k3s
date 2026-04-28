@@ -32,32 +32,41 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
-            'serve' => true,
-            'throw' => false,
-            'report' => false,
+            'root'   => storage_path('app/documents'),
+            'throw'  => false,
         ],
 
         'public' => [
-            'driver' => 'local',
-            'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'driver'     => 'local',
+            'root'       => storage_path('app/public'),
+            'url'        => env('APP_URL').'/storage',
             'visibility' => 'public',
-            'throw' => false,
-            'report' => false,
+            'throw'      => false,
         ],
 
+        // Real AWS S3 — activated by FILESYSTEM_DISK=s3
         's3' => [
-            'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
+            'driver'                  => 's3',
+            'key'                     => env('AWS_ACCESS_KEY_ID'),
+            'secret'                  => env('AWS_SECRET_ACCESS_KEY'),
+            'region'                  => env('AWS_DEFAULT_REGION', 'us-east-1'),
+            'bucket'                  => env('AWS_BUCKET'),
+            'url'                     => env('AWS_URL'),
+            'endpoint'                => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
-            'report' => false,
+            'throw'                   => false,
+        ],
+
+        // LocalStack — S3-compatible local emulation, activated by FILESYSTEM_DISK=localstack
+        'localstack' => [
+            'driver'                  => 's3',
+            'key'                     => env('LOCALSTACK_KEY', 'test'),
+            'secret'                  => env('LOCALSTACK_SECRET', 'test'),
+            'region'                  => env('LOCALSTACK_REGION', 'us-east-1'),
+            'bucket'                  => env('LOCALSTACK_BUCKET', 'dynadoc'),
+            'endpoint'                => env('LOCALSTACK_ENDPOINT', 'http://localstack:4566'),
+            'use_path_style_endpoint' => true,
+            'throw'                   => false,
         ],
 
     ],

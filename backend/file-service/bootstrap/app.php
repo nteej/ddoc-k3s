@@ -16,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(HandleCors::class);
         $middleware->alias([
-            'jwt.auth', ExtractJwtClaimsMiddleware::class,
+            'jwt.auth'   => ExtractJwtClaimsMiddleware::class,
+            'rbac'       => \App\Infrastructure\Http\Middlewares\RbacMiddleware::class,
+            'plan.limit' => \App\Infrastructure\Http\Middlewares\PlanLimitMiddleware::class,
         ]);
 
     })
@@ -27,4 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         __DIR__ . '/../app/Application/Commands',
         __DIR__ . '/../app/Infrastructure/Kafka/Consumers',
     ])
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
+        $schedule->command('files:purge-expired')->daily();
+    })
     ->create();

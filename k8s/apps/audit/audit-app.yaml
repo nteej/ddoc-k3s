@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-app
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit-app
+  template:
+    metadata:
+      labels:
+        app: audit-app
+    spec:
+      initContainers:
+        - name: copy-public
+          image: REGISTRY/dynadoc/audit-service:latest
+          command:
+            - sh
+            - -c
+            - "cp -r /var/www/html/public/. /mnt/public/ && chown -R 33:33 /mnt/public"
+          volumeMounts:
+            - name: public-files
+              mountPath: /mnt/public
+      containers:
+        - name: php-fpm
+          image: REGISTRY/dynadoc/audit-service:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: DB_CONNECTION
+              value: pgsql
+            - name: DB_HOST
+              value: audit-db-svc
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: audit_service
+            - name: DB_USERNAME
+              value: postgres
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: audit-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: audit-app-secret
+                  key: APP_KEY
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: "false"
+            - name: KAFKA_BROKERS
+              value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-1.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-2.kafka-headless.dynadoc.svc.cluster.local:9092"
+            - name: OTEL_PHP_AUTOLOAD_ENABLED
+              value: "true"
+            - name: OTEL_SERVICE_NAME
+              value: audit-service
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://tempo-svc.observability.svc.cluster.local:4318
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: http/protobuf
+            - name: OTEL_PROPAGATORS
+              value: baggage,tracecontext
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp
+          volumeMounts:
+            - name: public-files
+              mountPath: /var/www/html/public
+
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: audit.conf
+            - name: public-files
+              mountPath: /var/www/html/public
+              readOnly: true
+
+      volumes:
+        - name: public-files
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: nginx-configs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-svc
+  namespace: dynadoc
+spec:
+  selector:
+    app: audit-app
+  ports:
+    - port: 80
+      targetPort: 80

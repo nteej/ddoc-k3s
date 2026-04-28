@@ -15,12 +15,22 @@ class LoggedUserHelper
 
     public function companyId(): ?string
     {
-        return $this->get()['companyId'] ?? null;
+        return $this->organizationId();
+    }
+
+    public function organizationId(): ?string
+    {
+        return $this->get()['organizationId'] ?? $this->get()['companyId'] ?? null;
     }
 
     public function userId(): ?string
     {
         return $this->get()['userId'] ?? null;
+    }
+
+    public function role(): string
+    {
+        return $this->get()['role'] ?? 'viewer';
     }
 
     public function token(): ?string

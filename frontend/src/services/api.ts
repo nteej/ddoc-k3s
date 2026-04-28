@@ -5,6 +5,14 @@ import {
   Tag,
   Context,
   Company,
+  Organization,
+  OrgMember,
+  Role,
+  ApiKey,
+  Webhook,
+  WebhookEvent,
+  WebhookDelivery,
+  Notification,
   LoginCredentials,
   RegisterCredentials,
   CreateTemplateData,
@@ -40,8 +48,9 @@ const api = {
         email: apiResponse.data.email,
         name: apiResponse.data.name,
         avatar: undefined,
+        role: apiResponse.data.role,
       };
-      
+
       return { user };
 
     } catch (error){
@@ -74,6 +83,7 @@ const api = {
       email: data.data.email,
       name: data.data.name,
       avatar: undefined,
+      role: data.data.role,
     };
 
     return { user };
@@ -103,6 +113,7 @@ const api = {
       email: apiResponse.data.email,
       name: apiResponse.data.name,
       avatar: undefined,
+      role: apiResponse.data.role,
     };
   },
 
@@ -515,6 +526,184 @@ const api = {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || 'Failed to queue document generation');
     }
+  },
+
+  // ─── Organization API ─────────────────────────────────────────────────────
+
+  async getOrganization(): Promise<Organization> {
+    const res = await fetch(`${BASE_URL}/organizations/current`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load organization');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async updateOrganization(fields: { name?: string; slug?: string }): Promise<void> {
+    const res = await fetch(`${BASE_URL}/organizations/current`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields),
+    });
+    if (!res.ok) throw new Error('Failed to update organization');
+  },
+
+  async listMembers(): Promise<OrgMember[]> {
+    const res = await fetch(`${BASE_URL}/organizations/current/members`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load members');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async inviteMember(email: string, role: Role): Promise<{ token: string }> {
+    const res = await fetch(`${BASE_URL}/organizations/current/invitations`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to invite member');
+    return data.data;
+  },
+
+  async updateMemberRole(userId: string, role: Role): Promise<void> {
+    const res = await fetch(`${BASE_URL}/organizations/current/members/${userId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+    if (!res.ok) throw new Error('Failed to update role');
+  },
+
+  async removeMember(userId: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/organizations/current/members/${userId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to remove member');
+  },
+
+  async getInvitation(token: string): Promise<{ organization_name: string; organization_slug: string; email: string; role: Role }> {
+    const res = await fetch(`${BASE_URL}/invitations/${token}`);
+    if (!res.ok) throw new Error('Invitation not found or expired');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async acceptInvitation(token: string): Promise<{ user: User }> {
+    const res = await fetch(`${BASE_URL}/invitations/${token}/accept`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to accept invitation');
+    return { user: { id: data.data.id, name: data.data.name, email: data.data.email } };
+  },
+
+  async switchOrganization(orgId: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/organizations/switch/${orgId}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to switch organization');
+  },
+
+  // ─── API Keys ─────────────────────────────────────────────────────────────
+
+  async listApiKeys(): Promise<ApiKey[]> {
+    const res = await fetch(`${BASE_URL}/api-keys`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load API keys');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async createApiKey(name: string, role: Role, expiresAt?: string): Promise<{ key: string } & ApiKey> {
+    const res = await fetch(`${BASE_URL}/api-keys`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, role, expires_at: expiresAt }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to create API key');
+    return data.data;
+  },
+
+  async revokeApiKey(id: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/api-keys/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to revoke API key');
+  },
+
+  // ─── Webhooks ─────────────────────────────────────────────────────────────
+
+  async listWebhooks(): Promise<Webhook[]> {
+    const res = await fetch(`${BASE_URL}/webhooks`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load webhooks');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async createWebhook(url: string, events: WebhookEvent[]): Promise<Webhook> {
+    const res = await fetch(`${BASE_URL}/webhooks`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, events }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to create webhook');
+    return data.data;
+  },
+
+  async deleteWebhook(id: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/webhooks/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to delete webhook');
+  },
+
+  async listWebhookDeliveries(webhookId: string): Promise<WebhookDelivery[]> {
+    const res = await fetch(`${BASE_URL}/webhooks/${webhookId}/deliveries`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load deliveries');
+    const { data } = await res.json();
+    return data;
+  },
+
+  // ─── Notifications ────────────────────────────────────────────────────────
+
+  async listNotifications(limit = 15, offset = 0): Promise<Notification[]> {
+    const res = await fetch(`${BASE_URL}/notifications?limit=${limit}&offset=${offset}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to load notifications');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async getUnreadCount(): Promise<number> {
+    const res = await fetch(`${BASE_URL}/notifications/unread-count`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to get unread count');
+    const { data } = await res.json();
+    return data.count;
+  },
+
+  async markNotificationRead(id: string): Promise<void> {
+    await fetch(`${BASE_URL}/notifications/${id}/read`, {
+      method: 'PATCH',
+      credentials: 'include',
+    });
+  },
+
+  async markAllNotificationsRead(): Promise<void> {
+    await fetch(`${BASE_URL}/notifications/read-all`, {
+      method: 'POST',
+      credentials: 'include',
+    });
   },
 };
 

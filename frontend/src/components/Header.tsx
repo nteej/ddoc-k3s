@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, User, Menu, X, Zap, Globe } from 'lucide-react';
+import { LogOut, User, Menu, X, Zap, Globe, BarChart2, ExternalLink, ChevronDown } from 'lucide-react';
 import LogoMark from '@/components/LogoMark';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useTranslation } from 'react-i18next';
+import NotificationBell from '@/components/NotificationBell';
+import RoleGuard from '@/components/RoleGuard';
+
+const MONITORING_LINKS = [
+  { label: 'Grafana',    url: 'http://localhost:3000' },
+  { label: 'Prometheus', url: 'http://localhost:9090' },
+  { label: 'Loki',       url: 'http://localhost:3100' },
+  { label: 'Tempo',      url: 'http://localhost:3200' },
+  { label: 'Kong Admin', url: 'http://localhost:8001' },
+];
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -101,6 +111,33 @@ const Header: React.FC = () => {
             >
               {t('nav.settings')}
             </Link>
+
+            <RoleGuard minRole="admin">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 flex items-center gap-1.5">
+                    <BarChart2 className="w-4 h-4" />
+                    Monitoring
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="bg-white border-gray-200 shadow-md">
+                  {MONITORING_LINKS.map(({ label, url }) => (
+                    <DropdownMenuItem key={label} asChild>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span>{label}</span>
+                        <ExternalLink className="w-3 h-3 text-gray-400" />
+                      </a>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </RoleGuard>
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
@@ -124,6 +161,9 @@ const Header: React.FC = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* User Menu */}
             <DropdownMenu>
@@ -226,6 +266,28 @@ const Header: React.FC = () => {
               >
                 {t('nav.myProfile')}
               </Link>
+
+              <RoleGuard minRole="admin">
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <BarChart2 className="w-3.5 h-3.5" />
+                    Monitoring
+                  </p>
+                  {MONITORING_LINKS.map(({ label, url }) => (
+                    <a
+                      key={label}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all duration-200"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <span>{label}</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                    </a>
+                  ))}
+                </div>
+              </RoleGuard>
 
               {/* Mobile language switcher */}
               <div className="flex gap-2 px-3 pt-2 border-t border-gray-200">
