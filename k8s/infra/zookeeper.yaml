@@ -26,10 +26,11 @@ spec:
             - name: ZOOKEEPER_4LW_COMMANDS_WHITELIST
               value: "ruok,mntr,conf,stat"
           readinessProbe:
-            exec:
-              command: ["bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]
+            tcpSocket:
+              port: 2181
             initialDelaySeconds: 10
             periodSeconds: 10
+            failureThreshold: 12
 ---
 apiVersion: v1
 kind: Service

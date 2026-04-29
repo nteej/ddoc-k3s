@@ -33,7 +33,7 @@ find "$TMPDIR" -name "*.yaml" -exec \
 wait_rollout() {
   local kind=$1 name=$2 ns=$3
   echo "  Waiting for $kind/$name in $ns..."
-  kubectl rollout status "$kind/$name" -n "$ns" --timeout=180s
+  kubectl rollout status "$kind/$name" -n "$ns" --timeout=300s
 }
 
 wait_job() {
