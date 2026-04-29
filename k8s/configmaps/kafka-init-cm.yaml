@@ -9,7 +9,7 @@ data:
 
     ZOOKEEPER_HOST="zookeeper-svc.dynadoc.svc.cluster.local:2181"
     BOOTSTRAP_SERVER="kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092"
-    EXPECTED_BROKER_COUNT=3
+    EXPECTED_BROKER_COUNT=1
 
     echo "Waiting for brokers to register in Zookeeper..."
 
@@ -50,12 +50,12 @@ data:
       fi
     }
 
-    create_topic "user.logged" 3 3
-    create_topic "template.requested" 3 3
-    create_topic "template.delivered" 3 3
-    create_topic "audit.events" 3 3
-    create_topic "webhook.dispatch" 3 3
-    create_topic "notification.dispatch" 3 3
-    create_topic "quota.exceeded" 3 3
+    create_topic "user.logged" 3 1
+    create_topic "template.requested" 3 1
+    create_topic "template.delivered" 3 1
+    create_topic "audit.events" 3 1
+    create_topic "webhook.dispatch" 3 1
+    create_topic "notification.dispatch" 3 1
+    create_topic "quota.exceeded" 3 1
 
     echo "Topics created (or already existed)."
