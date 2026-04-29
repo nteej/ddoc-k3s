@@ -71,7 +71,7 @@ spec:
                 echo "DB already bootstrapped, running incremental migrations."
                 kong migrations up && kong migrations finish
               fi
-              exec kong start
+              exec kong docker-start
           volumeMounts:
             - name: jwt-public
               mountPath: /etc/kong/jwt-public.pem
