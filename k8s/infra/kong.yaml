@@ -25,6 +25,32 @@ spec:
                 echo "Waiting for kong-db..."
                 sleep 2
               done
+        - name: kong-migrations
+          image: kong:3.6
+          command:
+            - sh
+            - -c
+            - |
+              if kong migrations bootstrap; then
+                echo "DB bootstrapped."
+              else
+                echo "Already bootstrapped, running incremental migrations."
+                kong migrations up && kong migrations finish
+              fi
+          env:
+            - name: KONG_DATABASE
+              value: postgres
+            - name: KONG_PG_HOST
+              value: kong-db-svc
+            - name: KONG_PG_DATABASE
+              value: kong
+            - name: KONG_PG_USER
+              value: kong
+            - name: KONG_PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kong-db-secret
+                  key: POSTGRES_PASSWORD
       containers:
         - name: kong
           image: kong:3.6
@@ -61,17 +87,6 @@ spec:
               value: /dev/stderr
             - name: KONG_ADMIN_LISTEN
               value: "0.0.0.0:8001"
-          command:
-            - sh
-            - -c
-            - |
-              if kong migrations bootstrap; then
-                echo "DB bootstrapped."
-              else
-                echo "DB already bootstrapped, running incremental migrations."
-                kong migrations up && kong migrations finish
-              fi
-              exec kong docker-start
           volumeMounts:
             - name: jwt-public
               mountPath: /etc/kong/jwt-public.pem

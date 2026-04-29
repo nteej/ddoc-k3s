@@ -22,8 +22,5 @@ coverage/
 *.so
 *.dylib
 *.pyc
-package-lock.json
-yarn.lock
 .pnpm-lock.yaml
-composer.lock
 vendor/
