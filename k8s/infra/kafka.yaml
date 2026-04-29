@@ -76,11 +76,8 @@ spec:
             - name: KAFKA_MIN_INSYNC_REPLICAS
               value: "1"
           readinessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - "kafka-broker-api-versions --bootstrap-server localhost:9092"
+            tcpSocket:
+              port: 9092
             initialDelaySeconds: 30
             periodSeconds: 10
-            failureThreshold: 10
+            failureThreshold: 18
