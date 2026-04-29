@@ -12,6 +12,7 @@ spec:
       labels:
         app: cadvisor
     spec:
+      automountServiceAccountToken: false
       tolerations:
         - key: node-role.kubernetes.io/master
           operator: Exists

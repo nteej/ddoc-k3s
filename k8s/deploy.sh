@@ -28,7 +28,10 @@ echo "Substituting REGISTRY=$REGISTRY TAG=$TAG into manifests..."
 cp -r "$K8S_DIR"/. "$TMPDIR"/
 # Replace the placeholder "REGISTRY/dynadoc/<service>" with "$REGISTRY/<service>"
 find "$TMPDIR" -name "*.yaml" -exec \
-  sed -i "s|REGISTRY/dynadoc/|${REGISTRY}/|g; s|:latest|:${TAG}|g" {} \;
+  sed -i "s|REGISTRY/dynadoc/|${REGISTRY}/|g" {} \;
+# Only replace :latest on our own service images (not third-party like nginx, postgres, etc.)
+find "$TMPDIR" -name "*.yaml" -exec \
+  sed -i "s|${REGISTRY}/\([a-z-]*\):latest|${REGISTRY}/\1:${TAG}|g" {} \;
 
 wait_rollout() {
   local kind=$1 name=$2 ns=$3
@@ -51,6 +54,16 @@ echo "=== Step 2: Secrets & ConfigMaps ==="
 kubectl apply -f "$TMPDIR/secrets/"
 kubectl apply -f "$TMPDIR/configmaps/"
 kubectl apply -f "$TMPDIR/observability/configmaps/"
+
+# Create GHCR pull secret for private images (api-key-service, webhook-service)
+if [ -n "$GHCR_TOKEN" ]; then
+  kubectl create secret docker-registry ghcr-pull-secret \
+    --namespace dynadoc \
+    --docker-server=ghcr.io \
+    --docker-username="${GHCR_USER:-nteej}" \
+    --docker-password="$GHCR_TOKEN" \
+    --dry-run=client -o yaml | kubectl apply -f -
+fi
 
 echo ""
 echo "=== Step 3: Databases & Redis ==="

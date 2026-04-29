@@ -13,27 +13,6 @@ spec:
       labels:
         app: localstack
     spec:
-      initContainers:
-        # Create the S3 bucket on first boot
-        - name: create-bucket
-          image: amazon/aws-cli:latest
-          command:
-            - sh
-            - -c
-            - |
-              until aws --endpoint-url=http://localhost:4566 s3 ls > /dev/null 2>&1; do
-                echo "Waiting for LocalStack..."
-                sleep 3
-              done
-              aws --endpoint-url=http://localhost:4566 s3 mb s3://files 2>/dev/null || true
-              echo "Bucket ready."
-          env:
-            - name: AWS_ACCESS_KEY_ID
-              value: test
-            - name: AWS_SECRET_ACCESS_KEY
-              value: test
-            - name: AWS_DEFAULT_REGION
-              value: us-east-1
       containers:
         - name: localstack
           image: localstack/localstack:4.7.0
@@ -48,6 +27,21 @@ spec:
               value: "0.0.0.0:4566"
             - name: PERSISTENCE
               value: "true"
+            - name: AWS_ACCESS_KEY_ID
+              value: test
+            - name: AWS_SECRET_ACCESS_KEY
+              value: test
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - |
+                    until aws --endpoint-url=http://localhost:4566 s3 ls > /dev/null 2>&1; do
+                      sleep 3
+                    done
+                    aws --endpoint-url=http://localhost:4566 s3 mb s3://files 2>/dev/null || true
           volumeMounts:
             - name: localstack-data
               mountPath: /var/lib/localstack

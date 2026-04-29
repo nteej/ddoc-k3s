@@ -31,9 +31,7 @@ class HealthController extends BaseController
             'audit-db'       => ['audit-db-svc',      5432],
             'kong-db-node'   => ['kong-db-svc',       5432],
             'redis'          => ['redis-svc',         6379],
-            'kafka1'         => ['kafka-svc',         9092],
-            'kafka2'         => ['kafka-1.kafka-headless.dynadoc.svc.cluster.local', 9092],
-            'kafka3'         => ['kafka-2.kafka-headless.dynadoc.svc.cluster.local', 9092],
+            'kafka'          => ['kafka-svc',         9092],
             'zookeeper'      => ['zookeeper-svc',     2181],
         ];
 

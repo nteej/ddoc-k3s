@@ -1,0 +1,760 @@
+{
+  "info": {
+    "name": "DynaDoc API",
+    "description": "Complete API collection for DynaDoc Flow. Base URL: https://ddoc.fi/api\n\nAuth: Login via POST /auth/login — a JWT is set as an HttpOnly cookie (`token`) automatically.\n\nRoles: viewer < editor < admin < owner. Endpoints are annotated with the minimum required role.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "https://ddoc.fi/api", "type": "string" },
+    { "key": "context_id",  "value": "", "type": "string" },
+    { "key": "tag_id",      "value": "", "type": "string" },
+    { "key": "template_id", "value": "", "type": "string" },
+    { "key": "section_id",  "value": "", "type": "string" },
+    { "key": "file_id",     "value": "", "type": "string" },
+    { "key": "api_key_id",  "value": "", "type": "string" },
+    { "key": "webhook_id",  "value": "", "type": "string" },
+    { "key": "notif_id",    "value": "", "type": "string" },
+    { "key": "inv_token",   "value": "", "type": "string" },
+    { "key": "user_id",     "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('user_id', data.id);",
+                  "  pm.test('Login successful', () => pm.expect(data.email).to.exist);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Me (jwt.auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth", "me"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/forgot-password", "host": ["{{base_url}}"], "path": ["auth", "forgot-password"] }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"token\": \"{{reset_token}}\",\n  \"password\": \"newpassword123\",\n  \"password_confirmation\": \"newpassword123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/reset-password", "host": ["{{base_url}}"], "path": ["auth", "reset-password"] }
+          }
+        },
+        {
+          "name": "SSO Redirect (Google)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/sso/google", "host": ["{{base_url}}"], "path": ["auth", "sso", "google"] }
+          }
+        },
+        {
+          "name": "SSO Redirect (GitHub)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/sso/github", "host": ["{{base_url}}"], "path": ["auth", "sso", "github"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizations (jwt.auth)",
+      "item": [
+        {
+          "name": "Get Current Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Has org data', () => pm.expect(pm.response.json().data.id).to.exist);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/organizations/current", "host": ["{{base_url}}"], "path": ["organizations", "current"] }
+          }
+        },
+        {
+          "name": "List Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/organizations/current/members", "host": ["{{base_url}}"], "path": ["organizations", "current", "members"] }
+          }
+        },
+        {
+          "name": "Update Organization (admin+)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Organization\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/organizations/current", "host": ["{{base_url}}"], "path": ["organizations", "current"] }
+          }
+        },
+        {
+          "name": "Invite Member (admin+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('inv_token', pm.response.json().data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newmember@example.com\",\n  \"role\": \"viewer\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/organizations/current/invitations", "host": ["{{base_url}}"], "path": ["organizations", "current", "invitations"] }
+          }
+        },
+        {
+          "name": "Update Member Role (admin+)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"editor\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/organizations/current/members/{{user_id}}", "host": ["{{base_url}}"], "path": ["organizations", "current", "members", "{{user_id}}"] }
+          }
+        },
+        {
+          "name": "Remove Member (admin+)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/organizations/current/members/{{user_id}}", "host": ["{{base_url}}"], "path": ["organizations", "current", "members", "{{user_id}}"] }
+          }
+        },
+        {
+          "name": "Switch Organization",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/organizations/switch/{{org_id}}", "host": ["{{base_url}}"], "path": ["organizations", "switch", "{{org_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invitations",
+      "item": [
+        {
+          "name": "Show Invitation (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/invitations/{{inv_token}}", "host": ["{{base_url}}"], "path": ["invitations", "{{inv_token}}"] }
+          }
+        },
+        {
+          "name": "Accept Invitation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invited User\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/invitations/{{inv_token}}/accept", "host": ["{{base_url}}"], "path": ["invitations", "{{inv_token}}", "accept"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications (jwt.auth)",
+      "item": [
+        {
+          "name": "List Notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const items = pm.response.json().data;",
+                  "  if (items.length > 0) pm.collectionVariables.set('notif_id', items[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["notifications"],
+              "query": [
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/notifications/unread-count", "host": ["{{base_url}}"], "path": ["notifications", "unread-count"] }
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/notifications/{{notif_id}}/read", "host": ["{{base_url}}"], "path": ["notifications", "{{notif_id}}", "read"] }
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/notifications/read-all", "host": ["{{base_url}}"], "path": ["notifications", "read-all"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Keys (admin+)",
+      "item": [
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api-keys", "host": ["{{base_url}}"], "path": ["api-keys"] }
+          }
+        },
+        {
+          "name": "Create API Key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('api_key_id', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My API Key\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api-keys", "host": ["{{base_url}}"], "path": ["api-keys"] }
+          }
+        },
+        {
+          "name": "Delete API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api-keys/{{api_key_id}}", "host": ["{{base_url}}"], "path": ["api-keys", "{{api_key_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks (admin+)",
+      "item": [
+        {
+          "name": "List Webhooks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/webhooks", "host": ["{{base_url}}"], "path": ["webhooks"] }
+          }
+        },
+        {
+          "name": "Create Webhook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('webhook_id', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://your-endpoint.example.com/webhook\",\n  \"events\": [\"template.created\", \"file.generated\"]\n}"
+            },
+            "url": { "raw": "{{base_url}}/webhooks", "host": ["{{base_url}}"], "path": ["webhooks"] }
+          }
+        },
+        {
+          "name": "Get Webhook Deliveries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/webhooks/{{webhook_id}}/deliveries", "host": ["{{base_url}}"], "path": ["webhooks", "{{webhook_id}}", "deliveries"] }
+          }
+        },
+        {
+          "name": "Delete Webhook",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/webhooks/{{webhook_id}}", "host": ["{{base_url}}"], "path": ["webhooks", "{{webhook_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contexts (Template Service)",
+      "item": [
+        {
+          "name": "List Contexts (viewer+)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contexts/filters?name=&page=1&perPage=20",
+              "host": ["{{base_url}}"],
+              "path": ["contexts", "filters"],
+              "query": [
+                { "key": "name", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "perPage", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Context (editor+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('context_id', pm.response.json().data);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Customer Profile\",\n  \"description\": \"Context for customer data variables\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/contexts", "host": ["{{base_url}}"], "path": ["contexts"] }
+          }
+        },
+        {
+          "name": "Update Context (editor+)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Context Name\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/contexts/{{context_id}}", "host": ["{{base_url}}"], "path": ["contexts", "{{context_id}}"] }
+          }
+        },
+        {
+          "name": "Delete Context (admin+)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/contexts/{{context_id}}", "host": ["{{base_url}}"], "path": ["contexts", "{{context_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tags (Template Service)",
+      "item": [
+        {
+          "name": "List Tags (viewer+)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tags/filters?contextId=&type=&page=1&perPage=20",
+              "host": ["{{base_url}}"],
+              "path": ["tags", "filters"],
+              "query": [
+                { "key": "contextId", "value": "" },
+                { "key": "type", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "perPage", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Tag (editor+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('tag_id', pm.response.json().data);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"customer_name\",\n  \"description\": \"Full name of the customer\",\n  \"type\": 1,\n  \"contextId\": \"{{context_id}}\",\n  \"options\": []\n}"
+            },
+            "url": { "raw": "{{base_url}}/tags", "host": ["{{base_url}}"], "path": ["tags"] }
+          }
+        },
+        {
+          "name": "Update Tag (editor+)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"customer_full_name\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/tags/{{tag_id}}", "host": ["{{base_url}}"], "path": ["tags", "{{tag_id}}"] }
+          }
+        },
+        {
+          "name": "Delete Tag (admin+)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/tags/{{tag_id}}", "host": ["{{base_url}}"], "path": ["tags", "{{tag_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Templates (Template Service)",
+      "item": [
+        {
+          "name": "List Templates (viewer+)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/templates/filters?name=&page=1&perPage=20",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "filters"],
+              "query": [
+                { "key": "name", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "perPage", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Template (editor+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('template_id', pm.response.json().data);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invoice Template\",\n  \"description\": \"Standard invoice document\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/templates", "host": ["{{base_url}}"], "path": ["templates"] }
+          }
+        },
+        {
+          "name": "Update Template (editor+)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Invoice Template\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/templates/{{template_id}}", "host": ["{{base_url}}"], "path": ["templates", "{{template_id}}"] }
+          }
+        },
+        {
+          "name": "Delete Template (admin+)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/templates/{{template_id}}", "host": ["{{base_url}}"], "path": ["templates", "{{template_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sections (Template Service)",
+      "item": [
+        {
+          "name": "List Sections (viewer+)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sections/filters?templateId={{template_id}}&page=1&perPage=20",
+              "host": ["{{base_url}}"],
+              "path": ["sections", "filters"],
+              "query": [
+                { "key": "templateId", "value": "{{template_id}}" },
+                { "key": "page", "value": "1" },
+                { "key": "perPage", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Section (editor+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('section_id', pm.response.json().data);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Introduction\",\n  \"description\": \"Opening section\",\n  \"templateId\": \"{{template_id}}\",\n  \"htmlContent\": \"<p>Dear {{customer_name}},</p><p>Please find your invoice attached.</p>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/sections", "host": ["{{base_url}}"], "path": ["sections"] }
+          }
+        },
+        {
+          "name": "Update Section (editor+)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Introduction\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/sections/{{section_id}}", "host": ["{{base_url}}"], "path": ["sections", "{{section_id}}"] }
+          }
+        },
+        {
+          "name": "Delete Section (admin+)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/sections/{{section_id}}", "host": ["{{base_url}}"], "path": ["sections", "{{section_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Files (File Service)",
+      "item": [
+        {
+          "name": "List Files (viewer+)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/files/filters?templateId=&page=1&perPage=20",
+              "host": ["{{base_url}}"],
+              "path": ["files", "filters"],
+              "query": [
+                { "key": "templateId", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "perPage", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Async Generate File (editor+)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 202) {",
+                  "  pm.collectionVariables.set('file_id', pm.response.json().data?.id || '');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateId\": \"{{template_id}}\",\n  \"name\": \"Invoice-001\",\n  \"payload\": {\n    \"customer_name\": \"Acme Corp\",\n    \"invoice_date\": \"2026-04-29\"\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/files/async-generate", "host": ["{{base_url}}"], "path": ["files", "async-generate"] }
+          }
+        },
+        {
+          "name": "Download File (viewer+)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/files/download/{{file_id}}", "host": ["{{base_url}}"], "path": ["files", "download", "{{file_id}}"] }
+          }
+        },
+        {
+          "name": "Delete File (admin+)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/files/{{file_id}}", "host": ["{{base_url}}"], "path": ["files", "{{file_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit Logs (admin+)",
+      "item": [
+        {
+          "name": "List Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/audit-logs?page=1&perPage=20",
+              "host": ["{{base_url}}"],
+              "path": ["audit-logs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "perPage", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "System Health (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health/system", "host": ["{{base_url}}"], "path": ["health", "system"] }
+          }
+        }
+      ]
+    }
+  ]
+}

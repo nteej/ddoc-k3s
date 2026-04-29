@@ -27,6 +27,7 @@ data:
           # Build log file path from pod UID
           - source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
             separator: /
+            regex: (.+)/(.+)
             replacement: /var/log/pods/*$1*/$2/*.log
             target_label: __path__
 

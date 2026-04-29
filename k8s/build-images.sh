@@ -18,8 +18,8 @@ LOCAL_ONLY=${1:-""}   # pass --local to skip docker push
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
-SERVICE_NAMES=(user-service template-service file-service audit-service frontend)
-SERVICE_CTXS=(backend/user-service backend/template-service backend/file-service backend/audit-service frontend)
+SERVICE_NAMES=(user-service template-service file-service audit-service frontend api-key-service webhook-service)
+SERVICE_CTXS=(backend/user-service backend/template-service backend/file-service backend/audit-service frontend backend/api-key-service backend/webhook-service)
 
 BUILT_IMAGES=()
 

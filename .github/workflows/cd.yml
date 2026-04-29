@@ -1,88 +1,72 @@
 name: CD
 
 on:
-  push:
-    branches: [master]
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Image tag to deploy (SHA or 'latest')"
+        description: "Image tag to deploy (e.g. v1.0.0 or latest)"
         required: false
         default: "latest"
       service:
-        description: "Service to deploy (leave empty for all changed)"
+        description: "Service to deploy (leave empty for all)"
         required: false
         default: ""
 
 concurrency:
   group: cd-${{ github.ref }}
-  cancel-in-progress: false   # never cancel an in-flight deploy
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io/${{ github.repository_owner }}/dynadoc
 
 jobs:
-  # ─── Detect what changed ─────────────────────────────────────────────────
+  # ─── Resolve the image tag ────────────────────────────────────────────────
 
-  detect-changes:
-    name: Detect changes
+  resolve-tag:
+    name: Resolve tag
     runs-on: ubuntu-24.04
     outputs:
-      user:     ${{ steps.filter.outputs.user }}
-      template: ${{ steps.filter.outputs.template }}
-      file:     ${{ steps.filter.outputs.file }}
-      audit:    ${{ steps.filter.outputs.audit }}
-      frontend: ${{ steps.filter.outputs.frontend }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Path filter
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            user:
-              - 'backend/user-service/**'
-            template:
-              - 'backend/template-service/**'
-            file:
-              - 'backend/file-service/**'
-            audit:
-              - 'backend/audit-service/**'
-            frontend:
-              - 'frontend/**'
-
-  # ─── Build + push images (parallel per service) ───────────────────────────
+  # ─── Build all services in parallel ─────────────────────────────────────
 
   build-user:
     name: Build / user-service
-    needs: detect-changes
-    if: needs.detect-changes.outputs.user == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'user' || github.event.inputs.service == ''))
+    needs: resolve-tag
+    if: github.event_name == 'release' || github.event.inputs.service == '' || github.event.inputs.service == 'user'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
       - uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
           context: backend/user-service
           push: true
           tags: |
-            ${{ env.REGISTRY }}/user-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/user-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/user-service:latest
           cache-from: type=gha,scope=user-service
           cache-to: type=gha,mode=max,scope=user-service
@@ -90,28 +74,28 @@ jobs:
 
   build-template:
     name: Build / template-service
-    needs: detect-changes
-    if: needs.detect-changes.outputs.template == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'template' || github.event.inputs.service == ''))
+    needs: resolve-tag
+    if: github.event_name == 'release' || github.event.inputs.service == '' || github.event.inputs.service == 'template'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
       - uses: docker/setup-buildx-action@v3
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
           context: backend/template-service
           push: true
           tags: |
-            ${{ env.REGISTRY }}/template-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/template-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/template-service:latest
           cache-from: type=gha,scope=template-service
           cache-to: type=gha,mode=max,scope=template-service
@@ -119,28 +103,28 @@ jobs:
 
   build-file:
     name: Build / file-service
-    needs: detect-changes
-    if: needs.detect-changes.outputs.file == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'file' || github.event.inputs.service == ''))
+    needs: resolve-tag
+    if: github.event_name == 'release' || github.event.inputs.service == '' || github.event.inputs.service == 'file'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
       - uses: docker/setup-buildx-action@v3
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
           context: backend/file-service
           push: true
           tags: |
-            ${{ env.REGISTRY }}/file-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/file-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/file-service:latest
           cache-from: type=gha,scope=file-service
           cache-to: type=gha,mode=max,scope=file-service
@@ -148,180 +132,223 @@ jobs:
 
   build-audit:
     name: Build / audit-service
-    needs: detect-changes
-    if: needs.detect-changes.outputs.audit == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'audit' || github.event.inputs.service == ''))
+    needs: resolve-tag
+    if: github.event_name == 'release' || github.event.inputs.service == '' || github.event.inputs.service == 'audit'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
       - uses: docker/setup-buildx-action@v3
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
           context: backend/audit-service
           push: true
           tags: |
-            ${{ env.REGISTRY }}/audit-service:${{ github.sha }}
+            ${{ env.REGISTRY }}/audit-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/audit-service:latest
           cache-from: type=gha,scope=audit-service
           cache-to: type=gha,mode=max,scope=audit-service
           provenance: false
 
-  build-frontend:
-    name: Build / frontend
-    needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'frontend' || github.event.inputs.service == ''))
+  build-api-key:
+    name: Build / api-key-service
+    needs: resolve-tag
+    if: github.event_name == 'release' || github.event.inputs.service == '' || github.event.inputs.service == 'api-key'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
       - uses: docker/setup-buildx-action@v3
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend/api-key-service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/api-key-service:${{ needs.resolve-tag.outputs.tag }}
+            ${{ env.REGISTRY }}/api-key-service:latest
+          cache-from: type=gha,scope=api-key-service
+          cache-to: type=gha,mode=max,scope=api-key-service
+          provenance: false
+
+  build-webhook:
+    name: Build / webhook-service
+    needs: resolve-tag
+    if: github.event_name == 'release' || github.event.inputs.service == '' || github.event.inputs.service == 'webhook'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend/webhook-service
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/webhook-service:${{ needs.resolve-tag.outputs.tag }}
+            ${{ env.REGISTRY }}/webhook-service:latest
+          cache-from: type=gha,scope=webhook-service
+          cache-to: type=gha,mode=max,scope=webhook-service
+          provenance: false
+
+  build-frontend:
+    name: Build / frontend
+    needs: resolve-tag
+    if: github.event_name == 'release' || github.event.inputs.service == '' || github.event.inputs.service == 'frontend'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
         with:
           context: frontend
           push: true
           tags: |
-            ${{ env.REGISTRY }}/frontend:${{ github.sha }}
+            ${{ env.REGISTRY }}/frontend:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/frontend:latest
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
           provenance: false
 
-  # ─── Rolling deploy via SSH ────────────────────────────────────────────────
+  # ─── Rolling deploy via SSH ───────────────────────────────────────────────
 
   deploy:
-    name: Deploy to VPS
+    name: Deploy to production
     needs:
-      - detect-changes
+      - resolve-tag
       - build-user
       - build-template
       - build-file
       - build-audit
+      - build-api-key
+      - build-webhook
       - build-frontend
-    # Run if at least one build job ran (or was skipped because nothing changed)
-    if: |
-      always() &&
-      !contains(needs.*.result, 'failure') &&
-      !contains(needs.*.result, 'cancelled') &&
-      (
-        needs.detect-changes.outputs.user     == 'true' ||
-        needs.detect-changes.outputs.template == 'true' ||
-        needs.detect-changes.outputs.file     == 'true' ||
-        needs.detect-changes.outputs.audit    == 'true' ||
-        needs.detect-changes.outputs.frontend == 'true' ||
-        github.event_name == 'workflow_dispatch'
-      )
+    if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-24.04
     environment: production
     steps:
-      - name: Resolve deploy tag
-        id: tag
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ] && [ "${{ github.event.inputs.tag }}" != "latest" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Deploy changed services
+      - name: Deploy all services
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT || 22 }}
-          envs: REGISTRY,DEPLOY_TAG,DEPLOY_USER,DEPLOY_TEMPLATE,DEPLOY_FILE,DEPLOY_AUDIT,DEPLOY_FRONTEND,DEPLOY_SERVICE
           script_stop: true
           script: |
             set -euo pipefail
 
             REGISTRY="${{ env.REGISTRY }}"
-            TAG="${{ steps.tag.outputs.tag }}"
+            TAG="${{ needs.resolve-tag.outputs.tag }}"
             NS=dynadoc
+            DISPATCH_SERVICE="${{ github.event.inputs.service || '' }}"
 
-            deploy_user="${{ needs.detect-changes.outputs.user }}"
-            deploy_template="${{ needs.detect-changes.outputs.template }}"
-            deploy_file="${{ needs.detect-changes.outputs.file }}"
-            deploy_audit="${{ needs.detect-changes.outputs.audit }}"
-            deploy_frontend="${{ needs.detect-changes.outputs.frontend }}"
-            dispatch_service="${{ github.event.inputs.service || '' }}"
-            is_dispatch="${{ github.event_name == 'workflow_dispatch' }}"
+            echo "Deploying tag: ${TAG}"
 
             roll() {
-              local deployment=$1
-              local container=$2
-              local image=$3
-              echo "  → kubectl set image deployment/${deployment} ${container}=${image} -n ${NS}"
+              local deployment=$1 container=$2 image=$3
+              echo "  → ${deployment} / ${container}"
               kubectl set image deployment/${deployment} ${container}=${image} -n ${NS}
               kubectl rollout status deployment/${deployment} -n ${NS} --timeout=180s || {
-                echo "  ✗ Rollout failed — undoing"
+                echo "  ✗ Rollout failed — rolling back"
                 kubectl rollout undo deployment/${deployment} -n ${NS}
                 exit 1
               }
-              echo "  ✓ ${deployment} deployed"
             }
 
-            # ── user-service ──────────────────────────────────────────────────
-            if [ "$deploy_user" = "true" ] || ([ "$is_dispatch" = "true" ] && ([ -z "$dispatch_service" ] || [ "$dispatch_service" = "user" ])); then
-              echo "==> Deploying user-service ($TAG)"
-              IMAGE="${REGISTRY}/user-service:${TAG}"
-              roll user-app php-fpm   "$IMAGE"
-              roll user-app copy-public "$IMAGE"
-            fi
+            deploy_svc() {
+              local svc=$1
+              [ -z "$DISPATCH_SERVICE" ] || [ "$DISPATCH_SERVICE" = "$svc" ]
+            }
 
-            # ── template-service ──────────────────────────────────────────────
-            if [ "$deploy_template" = "true" ] || ([ "$is_dispatch" = "true" ] && ([ -z "$dispatch_service" ] || [ "$dispatch_service" = "template" ])); then
-              echo "==> Deploying template-service ($TAG)"
-              IMAGE="${REGISTRY}/template-service:${TAG}"
-              roll template-app      php-fpm           "$IMAGE"
-              roll template-app      copy-public       "$IMAGE"
-              roll template-consumer template-consumer "$IMAGE"
-              roll template-queue    template-queue    "$IMAGE"
-            fi
+            # Ensure GHCR pull secret exists for private images
+            kubectl create secret docker-registry ghcr-pull-secret \
+              --namespace ${NS} \
+              --docker-server=ghcr.io \
+              --docker-username="${{ github.repository_owner }}" \
+              --docker-password="${{ secrets.GITHUB_TOKEN }}" \
+              --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null || true
 
-            # ── file-service ──────────────────────────────────────────────────
-            if [ "$deploy_file" = "true" ] || ([ "$is_dispatch" = "true" ] && ([ -z "$dispatch_service" ] || [ "$dispatch_service" = "file" ])); then
-              echo "==> Deploying file-service ($TAG)"
-              IMAGE="${REGISTRY}/file-service:${TAG}"
-              roll file-app      php-fpm       "$IMAGE"
-              roll file-app      copy-public   "$IMAGE"
-              roll file-consumer file-consumer "$IMAGE"
-              roll file-queue    file-queue    "$IMAGE"
-            fi
+            deploy_svc user && {
+              echo "==> user-service"
+              roll user-app php-fpm    "${REGISTRY}/user-service:${TAG}"
+              roll user-app copy-public "${REGISTRY}/user-service:${TAG}"
+            }
 
-            # ── audit-service ─────────────────────────────────────────────────
-            if [ "$deploy_audit" = "true" ] || ([ "$is_dispatch" = "true" ] && ([ -z "$dispatch_service" ] || [ "$dispatch_service" = "audit" ])); then
-              echo "==> Deploying audit-service ($TAG)"
-              IMAGE="${REGISTRY}/audit-service:${TAG}"
-              roll audit-app      php-fpm        "$IMAGE"
-              roll audit-app      copy-public    "$IMAGE"
-              roll audit-consumer audit-consumer "$IMAGE"
-            fi
+            deploy_svc template && {
+              echo "==> template-service"
+              roll template-app      php-fpm            "${REGISTRY}/template-service:${TAG}"
+              roll template-app      copy-public        "${REGISTRY}/template-service:${TAG}"
+              roll template-consumer template-consumer  "${REGISTRY}/template-service:${TAG}"
+              roll template-queue    template-queue     "${REGISTRY}/template-service:${TAG}"
+            }
 
-            # ── frontend ──────────────────────────────────────────────────────
-            if [ "$deploy_frontend" = "true" ] || ([ "$is_dispatch" = "true" ] && ([ -z "$dispatch_service" ] || [ "$dispatch_service" = "frontend" ])); then
-              echo "==> Deploying frontend ($TAG)"
-              IMAGE="${REGISTRY}/frontend:${TAG}"
-              roll frontend frontend "$IMAGE"
-            fi
+            deploy_svc file && {
+              echo "==> file-service"
+              roll file-app      php-fpm       "${REGISTRY}/file-service:${TAG}"
+              roll file-app      copy-public   "${REGISTRY}/file-service:${TAG}"
+              roll file-consumer file-consumer "${REGISTRY}/file-service:${TAG}"
+              roll file-queue    file-queue    "${REGISTRY}/file-service:${TAG}"
+            }
+
+            deploy_svc audit && {
+              echo "==> audit-service"
+              roll audit-app      php-fpm        "${REGISTRY}/audit-service:${TAG}"
+              roll audit-app      copy-public    "${REGISTRY}/audit-service:${TAG}"
+              roll audit-consumer audit-consumer "${REGISTRY}/audit-service:${TAG}"
+            }
+
+            deploy_svc api-key && {
+              echo "==> api-key-service"
+              roll api-key-app api-key-service "${REGISTRY}/api-key-service:${TAG}"
+            }
+
+            deploy_svc webhook && {
+              echo "==> webhook-service"
+              roll webhook-app webhook-service "${REGISTRY}/webhook-service:${TAG}"
+            }
+
+            deploy_svc frontend && {
+              echo "==> frontend"
+              roll frontend frontend "${REGISTRY}/frontend:${TAG}"
+            }
 
             echo ""
-            echo "All deployments complete."
-            kubectl get pods -n dynadoc --no-headers | awk '{print $1, $3}'
+            echo "Release ${TAG} deployed successfully."
+            kubectl get pods -n ${NS} --no-headers | awk '{print $1, $3}'
