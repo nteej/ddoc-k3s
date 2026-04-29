@@ -66,9 +66,21 @@ spec:
               value: baggage,tracecontext
             - name: OTEL_TRACES_EXPORTER
               value: otlp
+            - name: JWT_PRIVATE_KEY_PATH
+              value: storage/oauth/jwt-private.pem
+            - name: JWT_PUBLIC_KEY_PATH
+              value: storage/oauth/jwt-public.pem
           volumeMounts:
             - name: public-files
               mountPath: /var/www/html/public
+            - name: jwt-private
+              mountPath: /var/www/html/storage/oauth/jwt-private.pem
+              subPath: jwt-private.pem
+              readOnly: true
+            - name: jwt-public
+              mountPath: /var/www/html/storage/oauth/jwt-public.pem
+              subPath: jwt-public.pem
+              readOnly: true
 
         - name: nginx
           image: nginx:alpine
@@ -88,6 +100,18 @@ spec:
         - name: nginx-config
           configMap:
             name: nginx-configs
+        - name: jwt-private
+          secret:
+            secretName: jwt-private-secret
+            items:
+              - key: jwt-private.pem
+                path: jwt-private.pem
+        - name: jwt-public
+          secret:
+            secretName: kong-jwt-secret
+            items:
+              - key: jwt-public.pem
+                path: jwt-public.pem
 ---
 apiVersion: v1
 kind: Service

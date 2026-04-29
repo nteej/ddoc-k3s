@@ -17,41 +17,40 @@ class HealthController extends BaseController
         // Worker/consumer containers have no TCP port — checked via DNS resolution.
 
         $tcpTargets = [
-            'user-nginx'     => ['user-nginx',                              80],
-            'template-nginx' => ['template-nginx',                          80],
-            'file-nginx'     => ['file-nginx',                              80],
-            'audit-nginx'    => ['audit-nginx',                             80],
-            'user-app'       => [env('DB_HOST', 'user-db'),   (int) env('DB_PORT', 5432)],
-            'template-db'    => ['template-db', 5432],
-            'file-db'        => ['file-db',     5432],
-            'audit-db'       => ['audit-db',    5432],
-            'kong-db'        => ['kong-db',     5432],
-            'redis'          => [env('REDIS_HOST', 'redis'),  6379],
-            'kafka1'         => ['kafka1',       9092],
-            'kafka2'         => ['kafka2',       9093],
-            'kafka3'         => ['kafka3',       9094],
-            'zookeeper'      => ['zookeeper',    2181],
-            'promtail'       => ['promtail',     9080],
+            'user-app'       => ['user-svc',          80],
+            'user-nginx'     => ['user-svc',          80],
+            'template-app'   => ['template-svc',      80],
+            'template-nginx' => ['template-svc',      80],
+            'file-app'       => ['file-svc',           80],
+            'file-nginx'     => ['file-svc',           80],
+            'audit-app'      => ['audit-svc',          80],
+            'audit-nginx'    => ['audit-svc',          80],
+            'user-db'        => ['user-db-svc',      5432],
+            'template-db'    => ['template-db-svc',  5432],
+            'file-db'        => ['file-db-svc',       5432],
+            'audit-db'       => ['audit-db-svc',      5432],
+            'kong-db-node'   => ['kong-db-svc',       5432],
+            'redis'          => ['redis-svc',         6379],
+            'kafka1'         => ['kafka-svc',         9092],
+            'kafka2'         => ['kafka-1.kafka-headless.dynadoc.svc.cluster.local', 9092],
+            'kafka3'         => ['kafka-2.kafka-headless.dynadoc.svc.cluster.local', 9092],
+            'zookeeper'      => ['zookeeper-svc',     2181],
         ];
 
         $httpTargets = [
-            'kong'       => 'http://kong:8001/',
-            'localstack' => 'http://localstack:4566/_localstack/health',
-            'grafana'    => 'http://grafana:3000/api/health',
-            'prometheus' => 'http://prometheus:9090/-/healthy',
-            'loki'       => 'http://loki:3100/ready',
-            'tempo'      => 'http://tempo:3200/ready',
-            'cadvisor'   => 'http://cadvisor:8080/healthz',
+            'kong'       => 'http://kong-svc:8001/',
+            'localstack' => 'http://localstack-svc:4566/_localstack/health',
+            'grafana'    => 'http://grafana-svc.observability:3000/api/health',
+            'prometheus' => 'http://prometheus-svc.observability:9090/-/healthy',
+            'loki'       => 'http://loki-svc.observability:3100/ready',
+            'tempo'      => 'http://tempo-svc.observability:3200/ready',
+            'cadvisor'   => 'http://cadvisor-svc.observability:8080/healthz',
+            'promtail'   => 'http://promtail-svc.observability:9080/ready',
         ];
 
         $dnsTargets = ['template-queue', 'file-queue', 'template-consumer', 'file-consumer', 'audit-consumer'];
 
         $services = $this->runAllParallel($tcpTargets, $httpTargets, $dnsTargets);
-
-        // Microservices are healthy when their nginx proxy is healthy
-        $services['template-app'] = $services['template-nginx'];
-        $services['file-app']     = $services['file-nginx'];
-        $services['audit-app']    = $services['audit-nginx'];
 
         $anyDown = collect($services)->contains(fn($s) => $s['status'] === 'down');
         $anyDeg  = collect($services)->contains(fn($s) => $s['status'] === 'degraded');

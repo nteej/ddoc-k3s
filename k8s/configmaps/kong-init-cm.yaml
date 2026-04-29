@@ -12,9 +12,7 @@ data:
     TEMPLATE_SVC="http://template-svc.dynadoc.svc.cluster.local:80"
     FILE_SVC="http://file-svc.dynadoc.svc.cluster.local:80"
     AUDIT_SVC="http://audit-svc.dynadoc.svc.cluster.local:80"
-    WEBHOOK_SVC="http://webhook-svc.dynadoc.svc.cluster.local:8085"
-    # Update FRONTEND_ORIGIN to match the actual NodePort or Ingress URL of your frontend
-    FRONTEND_ORIGIN="http://127.0.0.1:30573"
+    FRONTEND_ORIGIN="https://ddoc.fi"
 
     echo "Waiting for Kong Admin API..."
     until curl -s "$KONG_ADMIN/status" > /dev/null 2>&1; do
@@ -25,7 +23,6 @@ data:
 
     echo "Registering services and routes..."
 
-    # USER SERVICE
     curl -s -X POST "$KONG_ADMIN/services" \
       --data name=user-service \
       --data "url=$USER_SVC"
@@ -37,13 +34,16 @@ data:
       --data 'paths[]=/api/auth/logout' \
       --data 'paths[]=/api/auth/forgot-password' \
       --data 'paths[]=/api/auth/reset-password' \
-      --data 'paths[]=/api/api-keys' \
+      --data 'paths[]=/api/auth/sso' \
+      --data 'paths[]=/api/health' \
       --data 'paths[]=/api/organizations' \
-      --data 'paths[]=/api/invitations' \
       --data 'paths[]=/api/notifications' \
+      --data 'paths[]=/api/api-keys' \
+      --data 'paths[]=/api/webhooks' \
+      --data 'paths[]=/api/invitations' \
+      --data 'paths[]=/api/users' \
       --data 'strip_path=false'
 
-    # TEMPLATE SERVICE
     curl -s -X POST "$KONG_ADMIN/services" \
       --data name=template-service \
       --data "url=$TEMPLATE_SVC"
@@ -55,7 +55,6 @@ data:
       --data 'paths[]=/api/sections' \
       --data 'strip_path=false'
 
-    # FILE SERVICE
     curl -s -X POST "$KONG_ADMIN/services" \
       --data name=file-service \
       --data "url=$FILE_SVC"
@@ -64,7 +63,6 @@ data:
       --data 'paths[]=/api/files' \
       --data 'strip_path=false'
 
-    # AUDIT SERVICE
     curl -s -X POST "$KONG_ADMIN/services" \
       --data name=audit-service \
       --data "url=$AUDIT_SVC"
@@ -72,24 +70,6 @@ data:
     curl -s -X POST "$KONG_ADMIN/services/audit-service/routes" \
       --data 'paths[]=/api/audit-logs' \
       --data 'strip_path=false'
-
-    # WEBHOOK SERVICE
-    curl -s -X POST "$KONG_ADMIN/services" \
-      --data name=webhook-service \
-      --data "url=$WEBHOOK_SVC"
-
-    curl -s -X POST "$KONG_ADMIN/services/webhook-service/routes" \
-      --data 'paths[]=/api/webhooks' \
-      --data 'paths[]=/api/notifications' \
-      --data 'strip_path=false'
-
-    # JWT plugin on webhook-service
-    curl -s -X POST "$KONG_ADMIN/services/webhook-service/plugins" \
-      --data "name=jwt" \
-      --data "config.key_claim_name=iss" \
-      --data "config.claims_to_verify=exp" \
-      --data "config.run_on_preflight=false" \
-      --data "config.cookie_names=token"
 
     echo "Creating consumer and JWT credential..."
 
@@ -103,7 +83,6 @@ data:
       --data-urlencode "rsa_public_key=$PUB_KEY" \
       --data "key=user-service"
 
-    # JWT plugin on template-service
     curl -s -X POST "$KONG_ADMIN/services/template-service/plugins" \
       --data "name=jwt" \
       --data "config.key_claim_name=iss" \
@@ -111,7 +90,6 @@ data:
       --data "config.run_on_preflight=false" \
       --data "config.cookie_names=token"
 
-    # JWT plugin on file-service
     curl -s -X POST "$KONG_ADMIN/services/file-service/plugins" \
       --data "name=jwt" \
       --data "config.key_claim_name=iss" \
@@ -119,7 +97,13 @@ data:
       --data "config.run_on_preflight=false" \
       --data "config.cookie_names=token"
 
-    # Global CORS plugin
+    curl -s -X POST "$KONG_ADMIN/services/audit-service/plugins" \
+      --data "name=jwt" \
+      --data "config.key_claim_name=iss" \
+      --data "config.claims_to_verify=exp" \
+      --data "config.run_on_preflight=false" \
+      --data "config.cookie_names=token"
+
     curl -s -X POST "$KONG_ADMIN/plugins" \
       -H "Content-Type: application/json" \
       -d "{
@@ -134,21 +118,5 @@ data:
           \"preflight_continue\": false
         }
       }"
-
-    # API key pre-function: exchange ddk_ bearer tokens for short-lived JWTs
-    API_KEY_SVC="http://api-key-svc.dynadoc.svc.cluster.local:8086"
-    curl -s -X POST "$KONG_ADMIN/plugins" \
-      --data 'name=pre-function' \
-      --data-urlencode 'config.access[1]=local api_key = kong.request.get_header("x-api-key"); if not api_key then local auth = kong.request.get_header("authorization") or ""; local bearer = auth:match("^Bearer (.+)$"); if bearer and bearer:sub(1, 4) == "ddk_" then api_key = bearer end end; if not api_key or api_key:sub(1, 4) ~= "ddk_" then return end; local httpc = require("resty.http").new(); httpc:set_timeout(3000); local res, err = httpc:request_uri("'"$API_KEY_SVC"'/internal/validate", {method = "GET", headers = {["X-Api-Key"] = api_key}}); if err or not res then return kong.response.exit(503, {message = "Auth service unavailable"}) end; if res.status == 429 then return kong.response.exit(429, {message = "Rate limit exceeded"}) end; if res.status ~= 200 then return kong.response.exit(401, {message = "Invalid API key"}) end; local token = (res.headers or {})["x-validated-token"]; if not token then return kong.response.exit(500, {message = "Auth error"}) end; kong.service.request.set_header("Cookie", "token=" .. token); kong.service.request.clear_header("Authorization"); kong.service.request.clear_header("X-Api-Key")'
-
-    # SWAGGER UI — no auth
-    SWAGGER_SVC="http://swagger-ui-svc.dynadoc.svc.cluster.local:8080"
-    curl -s -X POST "$KONG_ADMIN/services" \
-      --data name=swagger-ui \
-      --data "url=$SWAGGER_SVC"
-
-    curl -s -X POST "$KONG_ADMIN/services/swagger-ui/routes" \
-      --data 'paths[]=/docs' \
-      --data 'strip_path=true'
 
     echo "Kong configuration finished!"

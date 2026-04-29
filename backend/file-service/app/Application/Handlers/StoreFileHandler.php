@@ -31,7 +31,14 @@ final readonly class StoreFileHandler
             organizationId: $helper->organizationId(),
         ));
 
-        event(new TemplateRequestedEvent($input->templateId));
+        try {
+            event(new TemplateRequestedEvent($input->templateId));
+        } catch (\Throwable $e) {
+            logger()->error("Failed to dispatch TemplateRequestedEvent: " . $e->getMessage(), [
+                'fileId'     => $fileId,
+                'templateId' => $input->templateId,
+            ]);
+        }
 
         return $fileId;
     }

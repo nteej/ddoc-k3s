@@ -109,7 +109,7 @@ class AuthController extends BaseController
             minutes:  (int) env('JWT_TTL', 21000) / 60,
             path:     '/',
             domain:   null,
-            secure:   false,
+            secure:   app()->environment('production'),
             httpOnly: true,
             sameSite: 'Strict'
         );

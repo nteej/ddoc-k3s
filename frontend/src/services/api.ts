@@ -24,7 +24,7 @@ import {
   GeneratedFilesResponse
 } from '@/types';
 
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = '/api';
 
 const api = {
   async login(credentials: LoginCredentials): Promise<{ user: User }> {

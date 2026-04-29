@@ -41,5 +41,5 @@ spec:
             - name: APP_ENV
               value: production
             - name: KAFKA_BROKERS
-              value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-1.kafka-headless.dynadoc.svc.cluster.local:9092,kafka-2.kafka-headless.dynadoc.svc.cluster.local:9092"
+              value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092"
           restartPolicy: Always

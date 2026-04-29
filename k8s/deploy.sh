@@ -58,12 +58,16 @@ kubectl apply -f "$TMPDIR/apps/user/user-db.yaml"
 kubectl apply -f "$TMPDIR/apps/template/template-db.yaml"
 kubectl apply -f "$TMPDIR/apps/file/file-db.yaml"
 kubectl apply -f "$TMPDIR/apps/audit/audit-db.yaml"
+kubectl apply -f "$TMPDIR/apps/api-key/api-key-db.yaml"
+kubectl apply -f "$TMPDIR/apps/webhook/webhook-db.yaml"
 kubectl apply -f "$TMPDIR/infra/kong-db.yaml"
 kubectl apply -f "$TMPDIR/infra/redis.yaml"
 wait_rollout statefulset user-db dynadoc
 wait_rollout statefulset template-db dynadoc
 wait_rollout statefulset file-db dynadoc
 wait_rollout statefulset audit-db dynadoc
+wait_rollout statefulset api-key-db dynadoc
+wait_rollout statefulset webhook-db dynadoc
 wait_rollout statefulset kong-db dynadoc
 wait_rollout deployment redis dynadoc
 
@@ -82,13 +86,18 @@ kubectl apply -f "$TMPDIR/apps/user/user-app.yaml"
 kubectl apply -f "$TMPDIR/apps/template/template-app.yaml"
 kubectl apply -f "$TMPDIR/apps/file/file-app.yaml"
 kubectl apply -f "$TMPDIR/apps/audit/audit-app.yaml"
+kubectl apply -f "$TMPDIR/apps/api-key/api-key-app.yaml"
+kubectl apply -f "$TMPDIR/apps/webhook/webhook-app.yaml"
 wait_rollout deployment user-app dynadoc
 wait_rollout deployment template-app dynadoc
 wait_rollout deployment file-app dynadoc
 wait_rollout deployment audit-app dynadoc
+wait_rollout deployment api-key-app dynadoc
+wait_rollout deployment webhook-app dynadoc
 
 echo ""
 echo "=== Step 6: Workers (Consumers & Queues) ==="
+kubectl apply -f "$TMPDIR/apps/worker-headless-svcs.yaml"
 kubectl apply -f "$TMPDIR/apps/template/template-consumer.yaml"
 kubectl apply -f "$TMPDIR/apps/template/template-queue.yaml"
 kubectl apply -f "$TMPDIR/apps/file/file-consumer.yaml"
@@ -103,12 +112,18 @@ kubectl apply -f "$TMPDIR/infra/kong-init-job.yaml"
 wait_job kong-init dynadoc
 
 echo ""
-echo "=== Step 8: Frontend & LocalStack ==="
+echo "=== Step 8: Frontend, LocalStack & Swagger ==="
 kubectl apply -f "$TMPDIR/frontend/frontend.yaml"
 kubectl apply -f "$TMPDIR/infra/localstack.yaml"
+kubectl apply -f "$TMPDIR/apps/swagger/swagger-ui.yaml"
 
 echo ""
-echo "=== Step 9: Observability ==="
+echo "=== Step 9: Traefik TLS & Ingress ==="
+kubectl apply -f "$TMPDIR/infra/traefik-config.yaml"
+kubectl apply -f "$TMPDIR/infra/ingress.yaml"
+
+echo ""
+echo "=== Step 10: Observability ==="
 kubectl apply -f "$TMPDIR/observability/prometheus.yaml"
 kubectl apply -f "$TMPDIR/observability/loki.yaml"
 kubectl apply -f "$TMPDIR/observability/tempo.yaml"

@@ -29,7 +29,11 @@ class PlanLimitMiddleware
         $limit = self::DOC_LIMITS[$plan] ?? self::DOC_LIMITS['free'];
         $key   = 'quota:docs:' . $orgId . ':' . now()->format('Y-m');
 
-        $current = (int) Redis::get($key);
+        try {
+            $current = (int) Redis::get($key);
+        } catch (\Throwable) {
+            return $next($request);
+        }
 
         if ($current >= $limit) {
             $this->publishQuotaNotification('quota.exceeded', $orgId, $current, $limit);
@@ -42,11 +46,13 @@ class PlanLimitMiddleware
         $response = $next($request);
 
         if ($response->isSuccessful()) {
-            $ttl = now()->addDays(32)->diffInSeconds(now());
-            Redis::pipeline(function ($pipe) use ($key, $ttl) {
-                $pipe->incr($key);
-                $pipe->expire($key, $ttl);
-            });
+            $ttl = (int) now()->addDays(32)->diffInSeconds(now());
+            try {
+                Redis::pipeline(function ($pipe) use ($key, $ttl) {
+                    $pipe->incr($key);
+                    $pipe->expire($key, $ttl);
+                });
+            } catch (\Throwable) {}
 
             $newCount = $current + 1;
             if ($limit !== PHP_INT_MAX && $newCount / $limit >= 0.8 && $current / $limit < 0.8) {

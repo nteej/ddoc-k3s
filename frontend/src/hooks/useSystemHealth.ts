@@ -14,7 +14,7 @@ export interface SystemHealth {
   services: Record<string, ServiceHealth>;
 }
 
-const HEALTH_URL = 'http://localhost:8081/api/health/system';
+const HEALTH_URL = '/api/health/system';
 
 async function fetchHealth(): Promise<SystemHealth> {
   const res = await fetch(HEALTH_URL, { credentials: 'omit' });

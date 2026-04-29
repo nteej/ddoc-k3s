@@ -84,3 +84,15 @@ spec:
             path: /var/lib/docker/containers
         - name: positions
           emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: promtail-svc
+  namespace: observability
+spec:
+  selector:
+    app: promtail
+  ports:
+    - port: 9080
+      targetPort: 9080

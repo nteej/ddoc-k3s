@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import api from '@/services/api';
 
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = 'https://api.ddoc.fi/api';
 
 const METHOD_COLORS: Record<string, string> = {
   POST: 'bg-green-500/20 text-green-300 border-green-500/30',
