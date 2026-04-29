@@ -65,23 +65,29 @@ spec:
             - sh
             - -c
             - |
-              kong migrations bootstrap ||
-              (kong migrations up && kong migrations finish) &&
-              exec kong start --vv
+              if kong migrations bootstrap; then
+                echo "DB bootstrapped."
+              else
+                echo "DB already bootstrapped, running incremental migrations."
+                kong migrations up && kong migrations finish
+              fi
+              exec kong start
           volumeMounts:
             - name: jwt-public
               mountPath: /etc/kong/jwt-public.pem
               subPath: jwt-public.pem
               readOnly: true
           readinessProbe:
-            exec:
-              command: ["kong", "health"]
+            httpGet:
+              path: /status
+              port: 8001
             initialDelaySeconds: 30
             periodSeconds: 10
-            failureThreshold: 10
+            failureThreshold: 12
           livenessProbe:
-            exec:
-              command: ["kong", "health"]
+            httpGet:
+              path: /status
+              port: 8001
             initialDelaySeconds: 60
             periodSeconds: 15
       volumes:
