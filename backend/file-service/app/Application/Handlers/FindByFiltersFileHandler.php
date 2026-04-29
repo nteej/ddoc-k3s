@@ -34,25 +34,22 @@ final readonly class FindByFiltersFileHandler
             );
 
             $templateData = $apiGateway->call();
+            $templateName = $templateData->json()['data'][0]['name'] ?? null;
 
-            if(! empty($templateData->json()['data'])) {
-                $outputDTO[] = $this->createFileOutput($file, $templateData->json());
-            }
+            $outputDTO[] = $this->createFileOutput($file, $templateName);
         }
 
         return $outputDTO;
     }
 
-    private function createFileOutput(File $file, array $template): FindByFiltersFileOutputDTO
+    private function createFileOutput(File $file, ?string $templateName): FindByFiltersFileOutputDTO
     {
-        $template = $template['data'][0];
-
         return new FindByFiltersFileOutputDTO(
             id: $file->id,
             templateId: $file->templateId,
             userId: app(LoggedUserHelper::class)->userId(),
             createdAt: Carbon::parse($file->createdAt)->format('Y-m-d h:i:s'),
-            templateName: $template['name'],
+            templateName: $templateName,
             status: $file->status->value,
             readyToDownload: $file->readyToDownload,
             errors: $file->errors,
