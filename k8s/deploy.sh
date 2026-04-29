@@ -72,7 +72,7 @@ echo "=== Step 4: Zookeeper → Kafka → Topics ==="
 kubectl apply -f "$TMPDIR/infra/zookeeper.yaml"
 wait_rollout deployment zookeeper dynadoc
 kubectl apply -f "$TMPDIR/infra/kafka.yaml"
-echo "  Waiting for all 3 Kafka brokers to be ready..."
+echo "  Waiting for Kafka broker to be ready..."
 kubectl wait --for=condition=ready pod -l app=kafka -n dynadoc --timeout=300s
 kubectl apply -f "$TMPDIR/infra/kafka-init-job.yaml"
 wait_job kafka-init dynadoc
