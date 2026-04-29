@@ -29,6 +29,7 @@ spec:
       containers:
         - name: webhook-service
           image: REGISTRY/dynadoc/webhook-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8085
           env:

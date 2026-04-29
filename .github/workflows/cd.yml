@@ -284,7 +284,7 @@ jobs:
               local deployment=$1 container=$2 image=$3
               echo "  → ${deployment} / ${container}"
               kubectl set image deployment/${deployment} ${container}=${image} -n ${NS}
-              kubectl rollout status deployment/${deployment} -n ${NS} --timeout=180s || {
+              kubectl rollout status deployment/${deployment} -n ${NS} --timeout=300s || {
                 echo "  ✗ Rollout failed — rolling back"
                 kubectl rollout undo deployment/${deployment} -n ${NS}
                 exit 1

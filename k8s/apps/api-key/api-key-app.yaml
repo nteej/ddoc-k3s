@@ -29,6 +29,7 @@ spec:
       containers:
         - name: api-key-service
           image: REGISTRY/dynadoc/api-key-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8086
           env:
