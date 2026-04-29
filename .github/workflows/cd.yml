@@ -335,11 +335,13 @@ jobs:
 
             deploy_svc api-key && {
               echo "==> api-key-service"
+              kubectl patch deployment/api-key-app -n ${NS} -p '{"spec":{"strategy":{"type":"Recreate","rollingUpdate":null}}}' 2>/dev/null || true
               roll api-key-app api-key-service "${REGISTRY}/api-key-service:${TAG}"
             }
 
             deploy_svc webhook && {
               echo "==> webhook-service"
+              kubectl patch deployment/webhook-app -n ${NS} -p '{"spec":{"strategy":{"type":"Recreate","rollingUpdate":null}}}' 2>/dev/null || true
               roll webhook-app webhook-service "${REGISTRY}/webhook-service:${TAG}"
             }
 
