@@ -16,6 +16,8 @@ data:
         isDefault: true
         jsonData:
           timeInterval: 15s
+          queryTimeout: 60s
+          httpMethod: POST
           exemplarTraceIdDestinations:
             - name: trace_id
               datasourceUid: tempo
@@ -26,12 +28,13 @@ data:
         url: http://loki-svc.observability.svc.cluster.local:3100
         access: proxy
         jsonData:
+          maxLines: 1000
           derivedFields:
             - datasourceUid: tempo
-              matcherRegex: "trace_id\":\"(\\w+)\""
+              matcherRegex: '"trace_id":"(\w+)"'
               name: TraceID
               url: "${__value.raw}"
-              urlDisplayLabel: View Trace
+              urlDisplayLabel: "View Trace"
 
       - name: Tempo
         type: tempo
@@ -45,3 +48,17 @@ data:
             enabled: true
           lokiSearch:
             datasourceUid: loki
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: -1m
+            spanEndTimeShift: 1m
+            filterByTraceID: true
+            filterBySpanID: false
+
+      - name: AlertManager
+        type: alertmanager
+        uid: alertmanager
+        url: http://alertmanager-svc.observability.svc.cluster.local:9093
+        access: proxy
+        jsonData:
+          implementation: prometheus
