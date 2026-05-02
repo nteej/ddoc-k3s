@@ -89,6 +89,8 @@ spec:
               value: admin@ddoc.fi
             - name: MAIL_FROM_NAME
               value: DynaDoc
+            - name: FRONTEND_URL
+              value: https://ddoc.fi
           volumeMounts:
             - name: public-files
               mountPath: /var/www/html/public

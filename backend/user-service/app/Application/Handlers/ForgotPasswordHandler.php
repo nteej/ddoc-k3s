@@ -6,7 +6,9 @@ namespace App\Application\Handlers;
 
 use App\Application\DTOs\ForgotPasswordInputDTO;
 use App\Domain\Repositories\UserRepositoryInterface;
+use App\Infrastructure\Mail\PasswordResetMail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 final readonly class ForgotPasswordHandler
@@ -15,16 +17,11 @@ final readonly class ForgotPasswordHandler
         private UserRepositoryInterface $userRepository,
     ) {}
 
-    /**
-     * Returns the plain-text token (caller is responsible for delivering it
-     * to the user — e.g. via email or, in dev mode, directly in the response).
-     */
     public function execute(ForgotPasswordInputDTO $input): ?string
     {
         $user = $this->userRepository->findFirstUsingFilters(['email' => $input->email]);
 
         if (!$user) {
-            // Return null silently — never reveal whether an email exists.
             return null;
         }
 
@@ -39,6 +36,12 @@ final readonly class ForgotPasswordHandler
             uniqueBy: ['email'],
             update: ['token', 'created_at'],
         );
+
+        $resetUrl = rtrim(env('FRONTEND_URL', 'https://ddoc.fi'), '/')
+            . '/reset-password?token=' . $token
+            . '&email=' . urlencode($input->email);
+
+        Mail::to($input->email)->send(new PasswordResetMail($resetUrl));
 
         return $token;
     }
