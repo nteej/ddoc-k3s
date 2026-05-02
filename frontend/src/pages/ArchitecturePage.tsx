@@ -111,15 +111,23 @@ const ALL: Record<string, Comp> = {
     tech: ['Nginx Alpine', 'FastCGI pass'],
     responsibilities: ['Reverse-proxy to audit-app:9000'],
   },
+  'notification-nginx': {
+    id: 'notification-nginx', label: 'notification-nginx', sub: 'Nginx sidecar · :80',
+    icon: <Server className="w-4 h-4" />, image: 'nginx:alpine',
+    ports: ['80'], kind: 'nginx',
+    description: 'Nginx sidecar container for the Notification Service. Serves the Laravel public directory and proxies PHP requests via FastCGI to notification-app on port 9000.',
+    tech: ['Nginx Alpine', 'FastCGI pass'],
+    responsibilities: ['Reverse-proxy to notification-app:9000', 'Static asset serving'],
+  },
   'user-app': {
     id: 'user-app', label: 'user-app', sub: 'Laravel 12 · PHP-FPM :9000',
     icon: <Lock className="w-4 h-4" />, image: 'dynadoc-flow-user-app',
     ports: ['9000 (FPM, internal)'], kind: 'service',
-    description: 'User Service — handles all identity and auth operations. Issues RS256 JWTs. On login, publishes a `user.logged` event to Kafka for downstream audit logging.',
+    description: 'User Service — handles all identity and auth operations. Issues RS256 JWTs. On login, publishes a `user.logged` event to Kafka. Password reset publishes a `notification.send` event so the Notification Service dispatches the reset email.',
     tech: ['PHP Laravel 12', 'PHP-FPM', 'PostgreSQL', 'JWT RS256', 'rdkafka', 'OpenTelemetry'],
-    responsibilities: ['User registration & login', 'JWT issuance & rotation', 'Password reset flow', 'Profile management', 'Publishes user.logged to Kafka'],
-    topics: ['user.logged'],
-    config: { env: ['DB_HOST=user-db', 'DB_PORT=5432', 'REDIS_HOST=redis', 'KAFKA_BROKERS=kafka1:9092,kafka2:9093,kafka3:9094', 'JWT_ALGO=RS256'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
+    responsibilities: ['User registration & login', 'JWT issuance & rotation', 'Password reset flow', 'Profile management', 'Publishes user.logged to Kafka', 'Publishes notification.send for password reset emails'],
+    topics: ['user.logged', 'notification.send'],
+    config: { env: ['DB_HOST=user-db', 'DB_PORT=5432', 'REDIS_HOST=redis', 'KAFKA_BROKERS=kafka-svc:9092', 'JWT_ALGO=RS256', 'FRONTEND_URL=https://ddoc.fi'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
   },
   'template-app': {
     id: 'template-app', label: 'template-app', sub: 'Laravel 12 · PHP-FPM :9000',
@@ -148,7 +156,17 @@ const ALL: Record<string, Comp> = {
     tech: ['PHP Laravel 12', 'PHP-FPM', 'PostgreSQL', 'rdkafka', 'OpenTelemetry'],
     responsibilities: ['Consume all Kafka events', 'Persist audit log records', 'Compliance reporting', 'Cross-service event correlation'],
     topics: ['audit.events'],
-    config: { env: ['DB_HOST=audit-db', 'KAFKA_BROKERS=kafka1:9092,kafka2:9093,kafka3:9094', 'KAFKA_GROUP_ID=audit-consumer-group'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
+    config: { env: ['DB_HOST=audit-db', 'KAFKA_BROKERS=kafka-svc:9092', 'KAFKA_GROUP_ID=audit-consumer-group'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
+  },
+  'notification-app': {
+    id: 'notification-app', label: 'notification-app', sub: 'Laravel 12 · PHP-FPM :9000',
+    icon: <Bell className="w-4 h-4" />, image: 'dynadoc/notification-service',
+    ports: ['9000 (FPM, internal)'], kind: 'service',
+    description: 'Notification Service — unified multi-channel dispatch. Accepts requests via REST API (POST /api/notifications/send, JWT-protected) or from the notification.send Kafka topic. Routes to Email (OVH SMTP), SMS (Twilio), or Pusher based on the payload `channel` field.',
+    tech: ['PHP Laravel 12', 'PHP-FPM', 'OVH SMTP (ssl0.ovh.net:465)', 'Twilio SDK', 'Pusher SDK', 'rdkafka'],
+    responsibilities: ['Email dispatch via OVH SMTP (smtps)', 'SMS dispatch via Twilio', 'Pusher real-time push', 'Blade template rendering for emails', 'REST API for direct sends'],
+    topics: ['notification.send'],
+    config: { env: ['MAIL_HOST=ssl0.ovh.net', 'MAIL_PORT=465', 'MAIL_SCHEME=smtps', 'KAFKA_BROKERS=kafka-svc:9092', 'KAFKA_CONSUMER_GROUP_ID=notification-service'], network: 'dynadoc-net' },
   },
   'template-queue': {
     id: 'template-queue', label: 'template-queue', sub: 'Laravel Queue Worker',
@@ -193,6 +211,15 @@ const ALL: Record<string, Comp> = {
     responsibilities: ['Consume user.logged', 'Consume template.requested', 'Consume template.delivered', 'Persist audit_logs records'],
     topics: ['user.logged', 'template.requested', 'template.delivered'],
   },
+  'notification-consumer': {
+    id: 'notification-consumer', label: 'notification-consumer', sub: 'Kafka Consumer',
+    icon: <RefreshCw className="w-4 h-4" />, image: 'dynadoc/notification-service',
+    ports: [], kind: 'worker',
+    description: 'Kafka consumer for the Notification Service. Listens to the `notification.send` topic and routes each message to the appropriate channel — email, SMS, or Pusher. Errors are caught and logged without blocking the consumer loop.',
+    tech: ['PHP Laravel 12', 'rdkafka', 'Consumer Group: notification-service'],
+    responsibilities: ['Consume notification.send events', 'Route to Email / SMS / Pusher channel', 'Blade template email rendering', 'Best-effort delivery with error logging'],
+    topics: ['notification.send'],
+  },
   zookeeper: {
     id: 'zookeeper', label: 'Zookeeper', sub: 'cp-zookeeper:7.6 · :2181',
     icon: <GitBranch className="w-4 h-4" />, image: 'confluentinc/cp-zookeeper:7.6.0',
@@ -208,7 +235,7 @@ const ALL: Record<string, Comp> = {
     description: 'Kafka Broker 1. Participates in all 4 topics with replication factor 3 and min-ISR 2. Advertised listener: PLAINTEXT://kafka1:9092.',
     tech: ['Confluent Kafka 7.6', 'PLAINTEXT', 'RF=3', 'min-ISR=2'],
     responsibilities: ['Hosts partition leaders & followers', 'Replicates to kafka2 & kafka3', 'Serves producers and consumers'],
-    topics: ['user.logged', 'template.requested', 'template.delivered', 'audit.events'],
+    topics: ['user.logged', 'template.requested', 'template.delivered', 'audit.events', 'notification.send'],
   },
   kafka2: {
     id: 'kafka2', label: 'kafka2', sub: 'Broker ID 2 · :9093',
@@ -217,7 +244,7 @@ const ALL: Record<string, Comp> = {
     description: 'Kafka Broker 2. Participates in all 4 topics with replication factor 3 and min-ISR 2. Advertised listener: PLAINTEXT://kafka2:9093.',
     tech: ['Confluent Kafka 7.6', 'PLAINTEXT', 'RF=3', 'min-ISR=2'],
     responsibilities: ['Hosts partition leaders & followers', 'Replicates to kafka1 & kafka3', 'Serves producers and consumers'],
-    topics: ['user.logged', 'template.requested', 'template.delivered', 'audit.events'],
+    topics: ['user.logged', 'template.requested', 'template.delivered', 'audit.events', 'notification.send'],
   },
   kafka3: {
     id: 'kafka3', label: 'kafka3', sub: 'Broker ID 3 · :9094',
@@ -226,7 +253,7 @@ const ALL: Record<string, Comp> = {
     description: 'Kafka Broker 3. Participates in all 4 topics with replication factor 3 and min-ISR 2. Advertised listener: PLAINTEXT://kafka3:9094.',
     tech: ['Confluent Kafka 7.6', 'PLAINTEXT', 'RF=3', 'min-ISR=2'],
     responsibilities: ['Hosts partition leaders & followers', 'Replicates to kafka1 & kafka2', 'Serves producers and consumers'],
-    topics: ['user.logged', 'template.requested', 'template.delivered', 'audit.events'],
+    topics: ['user.logged', 'template.requested', 'template.delivered', 'audit.events', 'notification.send'],
   },
   'user-db': {
     id: 'user-db', label: 'user-db', sub: 'PostgreSQL 15 · :5432',
@@ -365,7 +392,7 @@ const LAYERS: Layer[] = [
     id: 'proxy',
     label: 'Nginx Reverse Proxies',
     labelColor: 'bg-[#1d4ed8]',
-    components: ['user-nginx', 'template-nginx', 'file-nginx', 'audit-nginx'],
+    components: ['user-nginx', 'template-nginx', 'file-nginx', 'audit-nginx', 'notification-nginx'],
     scalable: 'horizontal',
     scaleHint: 'Add nginx instances per service for load balancing',
   },
@@ -373,7 +400,7 @@ const LAYERS: Layer[] = [
     id: 'services',
     label: 'Microservices  (PHP-FPM :9000)',
     labelColor: 'bg-[#2563eb]',
-    components: ['user-app', 'template-app', 'file-app', 'audit-app'],
+    components: ['user-app', 'template-app', 'file-app', 'audit-app', 'notification-app'],
     scalable: 'horizontal',
     scaleHint: 'Each service can scale horizontally — run multiple PHP-FPM containers per service',
   },
@@ -386,7 +413,7 @@ const LAYERS: Layer[] = [
     scaleHint: 'Workers and consumers scale horizontally — run more instances to increase throughput',
     subgroups: [
       { label: 'Queue Workers', ids: ['template-queue', 'file-queue'], note: 'Process Laravel jobs' },
-      { label: 'Kafka Consumers', ids: ['template-consumer', 'file-consumer', 'audit-consumer'], note: 'Consume Kafka topics' },
+      { label: 'Kafka Consumers', ids: ['template-consumer', 'file-consumer', 'audit-consumer', 'notification-consumer'], note: 'Consume Kafka topics' },
     ],
   },
   {
@@ -457,6 +484,14 @@ const TOPICS = [
     consumers: ['audit-db'],
     description: 'Aggregated audit stream. All system events are persisted here for compliance.',
   },
+  {
+    name: 'notification.send', partitions: 3, rf: 1,
+    color: 'bg-pink-100 border-pink-400 text-pink-800',
+    dotColor: 'bg-pink-500',
+    producers: ['user-app'],
+    consumers: ['notification-consumer'],
+    description: 'Outbound notification requests. Producers publish channel, recipient, template, and data. The notification-consumer routes each message to email, SMS, or Pusher.',
+  },
 ];
 
 // ─── Data flows ───────────────────────────────────────────────────────────────
@@ -503,6 +538,19 @@ const FLOWS: Record<string, FlowDef> = {
       { id: 'file-db',    label: 'File metadata retrieved' },
       { id: 'localstack', label: 'URL issued from S3' },
       { id: 'browser',    label: 'PDF downloaded from S3' },
+    ],
+  },
+  passwordReset: {
+    label: 'Password Reset', color: '#db2777',
+    steps: [
+      { id: 'browser',               label: 'User submits email' },
+      { id: 'kong',                  label: 'Kong routes (public endpoint)' },
+      { id: 'user-nginx',            label: 'Nginx → PHP-FPM' },
+      { id: 'user-app',              label: 'Token generated & stored' },
+      { id: 'user-db',               label: 'Token saved in password_reset_tokens' },
+      { id: 'kafka1',                label: 'notification.send published' },
+      { id: 'notification-consumer', label: 'Consumer picks up event' },
+      { id: 'notification-app',      label: 'Email dispatched via OVH SMTP' },
     ],
   },
   observability: {
@@ -740,21 +788,24 @@ const GPOS: Record<string, { x: number; y: number }> = {
   kafka1:              { x: 645, y: 255 },
   kafka2:              { x: 645, y: 295 },
   kafka3:              { x: 645, y: 335 },
-  'template-consumer': { x: 645, y: 400 },
-  'file-consumer':     { x: 645, y: 448 },
-  'audit-consumer':    { x: 645, y: 496 },
-  'user-db':           { x: 810, y: 20  },
-  'template-db':       { x: 810, y: 110 },
-  'file-db':           { x: 810, y: 200 },
-  'audit-db':          { x: 810, y: 295 },
-  redis:               { x: 810, y: 375 },
-  localstack:          { x: 810, y: 445 },
-  grafana:             { x: 120, y: 545 },
-  prometheus:          { x: 260, y: 545 },
-  loki:                { x: 400, y: 545 },
-  tempo:               { x: 540, y: 545 },
-  promtail:            { x: 680, y: 545 },
-  cadvisor:            { x: 810, y: 595 },
+  'template-consumer':    { x: 645, y: 400 },
+  'file-consumer':        { x: 645, y: 448 },
+  'audit-consumer':       { x: 645, y: 496 },
+  'notification-consumer':{ x: 645, y: 544 },
+  'user-db':              { x: 810, y: 20  },
+  'template-db':          { x: 810, y: 110 },
+  'file-db':              { x: 810, y: 200 },
+  'audit-db':             { x: 810, y: 295 },
+  redis:                  { x: 810, y: 375 },
+  localstack:             { x: 810, y: 445 },
+  'notification-nginx':   { x: 330, y: 490 },
+  'notification-app':     { x: 490, y: 490 },
+  grafana:                { x: 120, y: 645 },
+  prometheus:             { x: 260, y: 645 },
+  loki:                   { x: 400, y: 645 },
+  tempo:                  { x: 540, y: 645 },
+  promtail:               { x: 680, y: 645 },
+  cadvisor:               { x: 810, y: 695 },
 };
 
 // [from, to, style?]  style: 'otlp' = dashed purple, default = solid gray
@@ -782,9 +833,12 @@ const GEDGES: [string, string, string?][] = [
   ['zookeeper',   'kafka1'],
   ['zookeeper',   'kafka2'],
   ['zookeeper',   'kafka3'],
+  ['kong',   'notification-nginx'],
+  ['notification-nginx', 'notification-app'],
   ['kafka1', 'template-consumer'],
   ['kafka1', 'file-consumer'],
   ['kafka1', 'audit-consumer'],
+  ['kafka1', 'notification-consumer'],
   ['file-consumer',  'localstack'],
   ['audit-consumer', 'audit-db'],
   ['template-app', 'tempo',      'otlp'],
@@ -1116,7 +1170,7 @@ const GraphView: React.FC<{
 
   return (
     <div className="w-full overflow-x-auto rounded-2xl border-2 border-gray-200 bg-[#f8faff]">
-      <svg viewBox="0 0 940 640" style={{ minWidth: 680, width: '100%' }} fontFamily="system-ui, sans-serif">
+      <svg viewBox="0 0 940 745" style={{ minWidth: 680, width: '100%' }} fontFamily="system-ui, sans-serif">
         <defs>
           <marker id="arr" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
             <path d="M0,0 L6,2.5 L0,5 Z" fill="#94a3b8" />
@@ -1139,7 +1193,7 @@ const GraphView: React.FC<{
           { x: 795, w: 110, label: 'Data',        color: '#1e3a8a' },
         ].map(b => (
           <g key={b.label}>
-            <rect x={b.x} y={8} width={b.w} height={610} rx={10} fill={b.color} opacity={0.06} />
+            <rect x={b.x} y={8} width={b.w} height={710} rx={10} fill={b.color} opacity={0.06} />
             <text x={b.x + b.w / 2} y={22} textAnchor="middle" fontSize={8} fill={b.color} fontWeight="700" letterSpacing="0.08em" opacity={0.7}>
               {b.label.toUpperCase()}
             </text>
@@ -1147,8 +1201,8 @@ const GraphView: React.FC<{
         ))}
 
         {/* Observability band */}
-        <rect x={20} y={532} width={900} height={100} rx={10} fill="#4338ca" opacity={0.05} />
-        <text x={460} y={547} textAnchor="middle" fontSize={8} fill="#4338ca" fontWeight="700" letterSpacing="0.08em" opacity={0.7}>
+        <rect x={20} y={630} width={900} height={108} rx={10} fill="#4338ca" opacity={0.05} />
+        <text x={460} y={645} textAnchor="middle" fontSize={8} fill="#4338ca" fontWeight="700" letterSpacing="0.08em" opacity={0.7}>
           OBSERVABILITY
         </text>
 
