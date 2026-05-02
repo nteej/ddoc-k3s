@@ -77,7 +77,7 @@ spec:
             - name: MAIL_PORT
               value: "465"
             - name: MAIL_SCHEME
-              value: ssl
+              value: smtps
             - name: MAIL_USERNAME
               value: admin@ddoc.fi
             - name: MAIL_PASSWORD
