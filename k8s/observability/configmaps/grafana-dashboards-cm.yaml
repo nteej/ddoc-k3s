@@ -8,10 +8,35 @@ data:
     apiVersion: 1
 
     providers:
-      - name: DynaDoc
-        folder: DynaDoc Flow
+      - name: DynaDoc System Health
+        folder: "System & Infrastructure"
+        folderUid: system-infra
         type: file
         disableDeletion: false
         editable: true
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
         options:
-          path: /var/lib/grafana/dashboards
+          path: /etc/grafana/dashboards/system
+
+      - name: DynaDoc Kubernetes
+        folder: "Kubernetes Cluster"
+        folderUid: k8s-cluster
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/dashboards/kubernetes
+
+      - name: DynaDoc Applications
+        folder: "DynaDoc Flow"
+        folderUid: dynadoc-apps
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/dashboards/dynadoc

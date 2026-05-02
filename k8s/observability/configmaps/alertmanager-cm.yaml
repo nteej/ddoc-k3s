@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-cm
+  namespace: observability
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      # Configure your SMTP settings here for email alerts
+      # smtp_smarthost: 'smtp.gmail.com:587'
+      # smtp_from: 'alertmanager@dynadoc.local'
+      # smtp_auth_username: 'SMTP_USER'
+      # smtp_auth_password: 'SMTP_PASSWORD'
+      # smtp_require_tls: true
+
+    route:
+      receiver: default-webhook
+      group_by: [alertname, namespace, severity]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        - matchers:
+            - severity = critical
+          receiver: critical-webhook
+          group_wait: 10s
+          repeat_interval: 1h
+          continue: false
+        - matchers:
+            - severity = warning
+          receiver: default-webhook
+          repeat_interval: 4h
+
+    receivers:
+      - name: default-webhook
+        webhook_configs:
+          - url: 'http://localhost:5001/hooks/warning'
+            send_resolved: true
+            http_config:
+              follow_redirects: true
+        # Uncomment for email:
+        # email_configs:
+        #   - to: 'ops@dynadoc.local'
+        #     send_resolved: true
+        #     headers:
+        #       subject: '[WARNING] {{ .GroupLabels.alertname }} - {{ .GroupLabels.namespace }}'
+
+      - name: critical-webhook
+        webhook_configs:
+          - url: 'http://localhost:5001/hooks/critical'
+            send_resolved: true
+            http_config:
+              follow_redirects: true
+        # Uncomment for email:
+        # email_configs:
+        #   - to: 'ops@dynadoc.local'
+        #     send_resolved: true
+        #     headers:
+        #       subject: '[CRITICAL] {{ .GroupLabels.alertname }} - {{ .GroupLabels.namespace }}'
+
+    inhibit_rules:
+      # Suppress warning when critical is already firing for same alert+namespace
+      - source_matchers: [severity = critical]
+        target_matchers: [severity = warning]
+        equal: [alertname, namespace]
+      # Suppress pod alerts when node is down
+      - source_matchers: [alertname = NodeDown]
+        target_matchers: [alertname =~ "Pod.*"]
+        equal: [node]

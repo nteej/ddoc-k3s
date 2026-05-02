@@ -8,18 +8,99 @@ data:
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
+      scrape_timeout: 10s
+      external_labels:
+        cluster: dynadoc-k3s
+        env: production
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager-svc.observability.svc.cluster.local:9093']
+          timeout: 10s
+          api_version: v2
+
+    rule_files:
+      - /etc/prometheus/rules/alerts.yaml
 
     remote_write: []
 
     scrape_configs:
+      # ── Prometheus self ──────────────────────────────────────────────
       - job_name: prometheus
         static_configs:
           - targets: ['localhost:9090']
+        metrics_path: /metrics
 
+      # ── cAdvisor — container resource metrics ────────────────────────
       - job_name: cadvisor
         static_configs:
           - targets: ['cadvisor-svc.observability.svc.cluster.local:8080']
+        metric_relabel_configs:
+          # Drop high-cardinality container-level metrics we don't need
+          - source_labels: [__name__]
+            regex: container_(network_tcp_usage_total|tasks_state|memory_failures_total)
+            action: drop
 
+      # ── Node Exporter — host OS metrics ─────────────────────────────
+      - job_name: node-exporter
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [observability]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app]
+            regex: node-exporter
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__address__]
+            target_label: instance
+
+      # ── kube-state-metrics — Kubernetes object state ─────────────────
+      - job_name: kube-state-metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [observability]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app]
+            regex: kube-state-metrics
+            action: keep
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            regex: http-metrics
+            action: keep
+
+      # ── AlertManager self ────────────────────────────────────────────
+      - job_name: alertmanager
+        static_configs:
+          - targets: ['alertmanager-svc.observability.svc.cluster.local:9093']
+
+      # ── Tempo — tracing backend ──────────────────────────────────────
       - job_name: tempo
         static_configs:
           - targets: ['tempo-svc.observability.svc.cluster.local:3200']
+
+      # ── Kubernetes pod auto-discovery (annotation-based) ─────────────
+      - job_name: kubernetes-pods
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: app

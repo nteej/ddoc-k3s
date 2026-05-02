@@ -1,0 +1,280 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-dynadoc-cm
+  namespace: observability
+data:
+  dynadoc.json: |
+    {
+      "annotations": {"list": [{"builtIn": 1, "datasource": {"type": "grafana", "uid": "-- Grafana --"}, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard"}]},
+      "description": "DynaDoc Flow application health: per-service CPU, memory, restarts, and Kafka container metrics",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["dynadoc", "application", "services"],
+      "templating": {
+        "list": [
+          {
+            "current": {"selected": true, "text": "user-service", "value": "user-service"},
+            "datasource": {"type": "prometheus", "uid": "prometheus"},
+            "definition": "label_values(kube_pod_labels{namespace=\"dynadoc\"}, label_app)",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Service",
+            "multi": true,
+            "name": "service",
+            "options": [],
+            "query": {"qryType": 1, "query": "label_values(kube_pod_labels{namespace=\"dynadoc\"}, label_app)", "refId": "StandardVariableQuery"},
+            "refresh": 2,
+            "regex": "",
+            "sort": 1,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {"from": "now-3h", "to": "now"},
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "DynaDoc Flow — Applications",
+      "uid": "dynadoc-app-v1",
+      "version": 1,
+      "panels": [
+        {
+          "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+          "id": 1, "title": "Service Health Overview", "type": "row"
+        },
+        {
+          "id": 2, "type": "stat", "title": "user-service — Ready Pods",
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 1},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "unit": "short",
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            },
+            "overrides": []
+          },
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "count(kube_pod_status_ready{namespace=\"dynadoc\",condition=\"true\"} * on(pod) group_left() kube_pod_labels{namespace=\"dynadoc\",label_app=\"user-service\"}) or vector(0)", "legendFormat": "user-service", "refId": "A"}]
+        },
+        {
+          "id": 3, "type": "stat", "title": "template-service — Ready Pods",
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 1},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "unit": "short",
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            },
+            "overrides": []
+          },
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "count(kube_pod_status_ready{namespace=\"dynadoc\",condition=\"true\"} * on(pod) group_left() kube_pod_labels{namespace=\"dynadoc\",label_app=\"template-service\"}) or vector(0)", "legendFormat": "template-service", "refId": "A"}]
+        },
+        {
+          "id": 4, "type": "stat", "title": "file-service — Ready Pods",
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 1},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "unit": "short",
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            },
+            "overrides": []
+          },
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "count(kube_pod_status_ready{namespace=\"dynadoc\",condition=\"true\"} * on(pod) group_left() kube_pod_labels{namespace=\"dynadoc\",label_app=\"file-service\"}) or vector(0)", "legendFormat": "file-service", "refId": "A"}]
+        },
+        {
+          "id": 5, "type": "stat", "title": "audit-service — Ready Pods",
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 1},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "unit": "short",
+              "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+            },
+            "overrides": []
+          },
+          "options": {"colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "count(kube_pod_status_ready{namespace=\"dynadoc\",condition=\"true\"} * on(pod) group_left() kube_pod_labels{namespace=\"dynadoc\",label_app=\"audit-service\"}) or vector(0)", "legendFormat": "audit-service", "refId": "A"}]
+        },
+        {
+          "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+          "id": 6, "title": "Container CPU", "type": "row"
+        },
+        {
+          "id": 7, "type": "timeseries", "title": "CPU Usage by Service (cores)",
+          "gridPos": {"h": 9, "w": 24, "x": 0, "y": 6},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "showPoints": "auto", "spanNulls": false},
+              "mappings": [],
+              "min": 0,
+              "unit": "cores"
+            },
+            "overrides": []
+          },
+          "options": {"legend": {"calcs": ["lastNotNull", "max", "mean"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum by(label_app) (rate(container_cpu_usage_seconds_total{namespace=\"dynadoc\",container!=\"\",container!=\"POD\"}[5m]) * on(pod) group_left(label_app) kube_pod_labels{namespace=\"dynadoc\"})", "legendFormat": "{{ label_app }}", "refId": "A"}
+          ]
+        },
+        {
+          "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 15},
+          "id": 8, "title": "Container Memory", "type": "row"
+        },
+        {
+          "id": 9, "type": "timeseries", "title": "Memory Usage by Service (working set)",
+          "gridPos": {"h": 9, "w": 24, "x": 0, "y": 16},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "line", "fillOpacity": 15, "lineInterpolation": "smooth", "lineWidth": 2, "showPoints": "auto", "spanNulls": false},
+              "mappings": [],
+              "min": 0,
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum by(label_app) (container_memory_working_set_bytes{namespace=\"dynadoc\",container!=\"\",container!=\"POD\"} * on(pod) group_left(label_app) kube_pod_labels{namespace=\"dynadoc\"})", "legendFormat": "{{ label_app }}", "refId": "A"}
+          ]
+        },
+        {
+          "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 25},
+          "id": 10, "title": "Container Restarts", "type": "row"
+        },
+        {
+          "id": 11, "type": "timeseries", "title": "Restarts Over Time (30m window)",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 26},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "bars", "fillOpacity": 80, "lineWidth": 1, "showPoints": "never", "spanNulls": false},
+              "mappings": [],
+              "min": 0,
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {"legend": {"calcs": ["sum"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"dynadoc\"}[30m])", "legendFormat": "{{ pod }}/{{ container }}", "refId": "A"}]
+        },
+        {
+          "id": 12, "type": "table", "title": "Total Restarts per Container",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 26},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 3}, {"color": "red", "value": 10}]}
+            },
+            "overrides": [{"matcher": {"id": "byName", "options": "Restarts"}, "properties": [{"id": "custom.displayMode", "value": "color-background"}]}]
+          },
+          "options": {"cellHeight": "sm", "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false}, "showHeader": true, "sortBy": [{"desc": true, "displayName": "Restarts"}]},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "kube_pod_container_status_restarts_total{namespace=\"dynadoc\"}", "legendFormat": "{{pod}}/{{container}}", "refId": "A", "instant": true, "format": "table"}],
+          "transformations": [
+            {"id": "organize", "options": {"excludeByName": {"Time": true, "__name__": true, "job": true, "uid": true, "namespace": true}, "renameByName": {"Value": "Restarts", "pod": "Pod", "container": "Container"}}}
+          ]
+        },
+        {
+          "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 34},
+          "id": 13, "title": "Kafka & Infrastructure Containers", "type": "row"
+        },
+        {
+          "id": 14, "type": "timeseries", "title": "Kafka CPU Usage",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 35},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "showPoints": "auto", "spanNulls": false},
+              "mappings": [],
+              "min": 0,
+              "unit": "cores"
+            },
+            "overrides": []
+          },
+          "options": {"legend": {"calcs": ["lastNotNull", "max", "mean"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum by(pod) (rate(container_cpu_usage_seconds_total{namespace=\"dynadoc\",pod=~\"kafka-.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "{{ pod }}", "refId": "A"}]
+        },
+        {
+          "id": 15, "type": "timeseries", "title": "Kafka Memory Usage",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 35},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "showPoints": "auto", "spanNulls": false},
+              "mappings": [],
+              "min": 0,
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "options": {"legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum by(pod) (container_memory_working_set_bytes{namespace=\"dynadoc\",pod=~\"kafka-.*\",container!=\"\",container!=\"POD\"})", "legendFormat": "{{ pod }}", "refId": "A"}]
+        },
+        {
+          "id": 16, "type": "timeseries", "title": "Kong Gateway CPU & Memory",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 43},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "showPoints": "auto", "spanNulls": false},
+              "mappings": [],
+              "min": 0
+            },
+            "overrides": [
+              {"matcher": {"id": "byRegexp", "options": ".*CPU.*"}, "properties": [{"id": "unit", "value": "cores"}]},
+              {"matcher": {"id": "byRegexp", "options": ".*Memory.*"}, "properties": [{"id": "unit", "value": "bytes"}]}
+            ]
+          },
+          "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"infra\",pod=~\"kong-.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "Kong CPU", "refId": "A"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum(container_memory_working_set_bytes{namespace=\"infra\",pod=~\"kong-.*\",container!=\"\",container!=\"POD\"})", "legendFormat": "Kong Memory", "refId": "B"}
+          ]
+        },
+        {
+          "id": 17, "type": "timeseries", "title": "PostgreSQL Databases CPU & Memory",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 43},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "palette-classic"},
+              "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "showPoints": "auto", "spanNulls": false},
+              "mappings": [],
+              "min": 0,
+              "unit": "bytes"
+            },
+            "overrides": [{"matcher": {"id": "byRegexp", "options": ".*CPU.*"}, "properties": [{"id": "unit", "value": "cores"}]}]
+          },
+          "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum by(pod) (rate(container_cpu_usage_seconds_total{pod=~\".*-db-.*|.*postgres.*\",container!=\"\",container!=\"POD\"}[5m]))", "legendFormat": "{{ pod }} CPU", "refId": "A"},
+            {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum by(pod) (container_memory_working_set_bytes{pod=~\".*-db-.*|.*postgres.*\",container!=\"\",container!=\"POD\"})", "legendFormat": "{{ pod }} Memory", "refId": "B"}
+          ]
+        }
+      ]
+    }

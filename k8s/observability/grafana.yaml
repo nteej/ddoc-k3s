@@ -13,20 +13,55 @@ spec:
       labels:
         app: grafana
     spec:
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+        runAsNonRoot: true
       containers:
         - name: grafana
           image: grafana/grafana:10.4.2
           ports:
             - containerPort: 3000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
           env:
             - name: GF_AUTH_ANONYMOUS_ENABLED
-              value: "true"
-            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
-              value: Admin
+              value: "false"
             - name: GF_AUTH_DISABLE_LOGIN_FORM
               value: "false"
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: dynadoc-grafana
             - name: GF_FEATURE_TOGGLES_ENABLE
               value: traceqlEditor
+            - name: GF_UNIFIED_ALERTING_ENABLED
+              value: "true"
+            - name: GF_ALERTING_ENABLED
+              value: "false"
+            - name: GF_DASHBOARDS_MIN_REFRESH_INTERVAL
+              value: 10s
+            - name: GF_LOG_LEVEL
+              value: warn
+            - name: GF_ANALYTICS_REPORTING_ENABLED
+              value: "false"
           volumeMounts:
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources/datasources.yml
@@ -34,6 +69,13 @@ spec:
             - name: dashboards-provider
               mountPath: /etc/grafana/provisioning/dashboards/dashboards.yml
               subPath: dashboards.yml
+            # Dashboard JSONs — one folder per provider
+            - name: dashboard-system
+              mountPath: /etc/grafana/dashboards/system
+            - name: dashboard-k8s
+              mountPath: /etc/grafana/dashboards/kubernetes
+            - name: dashboard-dynadoc
+              mountPath: /etc/grafana/dashboards/dynadoc
             - name: grafana-data
               mountPath: /var/lib/grafana
       volumes:
@@ -43,6 +85,15 @@ spec:
         - name: dashboards-provider
           configMap:
             name: grafana-dashboards-cm
+        - name: dashboard-system
+          configMap:
+            name: grafana-dashboard-system-cm
+        - name: dashboard-k8s
+          configMap:
+            name: grafana-dashboard-k8s-cm
+        - name: dashboard-dynadoc
+          configMap:
+            name: grafana-dashboard-dynadoc-cm
         - name: grafana-data
           persistentVolumeClaim:
             claimName: grafana-pvc
