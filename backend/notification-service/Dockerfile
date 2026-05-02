@@ -13,7 +13,12 @@ WORKDIR /var/www/html
 
 COPY . .
 
-RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-interaction --prefer-dist --optimize-autoloader
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-interaction --prefer-dist --no-dev --no-scripts \
+    && composer dump-autoload --optimize --no-scripts
+
+# Bake the package manifest so both web and consumer containers skip discovery at runtime
+RUN APP_KEY=base64:dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdGtleQ== \
+    php artisan package:discover --ansi 2>/dev/null || true
 
 RUN chown -R www-data:www-data /var/www/html
 
