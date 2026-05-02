@@ -866,6 +866,35 @@ function statusLabel(s: ServiceStatus): string {
   return 'Checking…';
 }
 
+// ─── Latest release hook ─────────────────────────────────────────────────────
+const RELEASE_LS_KEY = 'dynadoc_last_seen_release';
+
+interface ReleaseInfo { tag: string; name: string; publishedAt: string; url: string }
+
+function useLatestRelease(): ReleaseInfo | null {
+  const [release, setRelease] = useState<ReleaseInfo | null>(null);
+
+  useEffect(() => {
+    const fetchRelease = () =>
+      fetch('https://api.github.com/repos/nteej/ddoc-k3s/releases/latest', {
+        headers: { Accept: 'application/vnd.github+json' },
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d?.tag_name) {
+            setRelease({ tag: d.tag_name, name: d.name || d.tag_name, publishedAt: d.published_at, url: d.html_url });
+          }
+        })
+        .catch(() => {});
+
+    fetchRelease();
+    const id = window.setInterval(fetchRelease, 5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  return release;
+}
+
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 const FLOW_CSS = `
@@ -1791,6 +1820,8 @@ const ArchitecturePage: React.FC = () => {
   const [incidents, setIncidents] = useState<IncidentEvent[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [notifEnabled, setNotifEnabled] = useState(false);
+  const release = useLatestRelease();
+  const [releaseUnread, setReleaseUnread] = useState(0);
   const [diagramView, setDiagramView] = useState<'layer' | 'graph'>('layer');
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1852,7 +1883,20 @@ const ArchitecturePage: React.FC = () => {
     if (newToasts.length > 0) setToasts(prev => [...newToasts, ...prev].slice(0, 5));
   }, [health, notifEnabled]);
 
+  // Track unseen releases
+  useEffect(() => {
+    if (!release) return;
+    const lastSeen = localStorage.getItem(RELEASE_LS_KEY);
+    if (lastSeen !== release.tag) setReleaseUnread(1);
+  }, [release]);
+
+  const dismissReleaseNotif = () => {
+    if (release) localStorage.setItem(RELEASE_LS_KEY, release.tag);
+    setReleaseUnread(0);
+  };
+
   const toggleNotifications = async () => {
+    dismissReleaseNotif();
     if (!notifEnabled) {
       const perm = await Notification.requestPermission();
       if (perm === 'granted') setNotifEnabled(true);
@@ -2063,13 +2107,30 @@ const ArchitecturePage: React.FC = () => {
                 <><PulsingDot status="healthy" /><span className="text-gray-500">All {totalCount} services operational</span></>
               )}
               {lastChecked && <span className="text-gray-300">· {lastChecked}</span>}
+              {release && (
+                <a
+                  href={release.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Released: ${new Date(release.publishedAt).toLocaleDateString()}`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#003580]/8 border border-[#003580]/20 text-[#003580] font-semibold hover:bg-[#003580]/15 transition-colors"
+                >
+                  <GitBranch className="w-3 h-3" />
+                  {release.tag}
+                </a>
+              )}
             </span>
             <button
               onClick={toggleNotifications}
-              title={notifEnabled ? 'Disable alert notifications' : 'Enable alert notifications'}
-              className={`p-1.5 rounded-lg border transition-colors ${notifEnabled ? 'border-[#003580] bg-[#003580] text-white' : 'border-gray-200 text-gray-400 hover:border-gray-400'}`}
+              title={releaseUnread > 0 ? `New release: ${release?.tag}` : notifEnabled ? 'Disable alert notifications' : 'Enable alert notifications'}
+              className={`relative p-1.5 rounded-lg border transition-colors ${notifEnabled ? 'border-[#003580] bg-[#003580] text-white' : 'border-gray-200 text-gray-400 hover:border-gray-400'}`}
             >
               {notifEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+              {releaseUnread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-white">
+                  {releaseUnread}
+                </span>
+              )}
             </button>
             <Link to="/login" className="text-sm text-[#003580] hover:text-white hover:bg-[#003580] px-3 py-1.5 rounded-lg border border-[#003580] transition-colors font-medium">
               Sign in →
