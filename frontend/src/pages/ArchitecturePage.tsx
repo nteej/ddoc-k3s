@@ -756,6 +756,142 @@ const PDF_TRACE: TraceStepDef[] = [
   },
 ];
 
+// ─── File Download trace steps ───────────────────────────────────────────────
+const DOWNLOAD_TRACE: TraceStepDef[] = [
+  {
+    nodeId: 'browser', kind: 'http', phase: 'sync',
+    title: 'File list requested',
+    summary: 'You open the Files page. The browser asks the File Service for the list of generated documents available to your account.',
+    protocol: 'HTTPS · GET /api/files',
+    detail: 'The React SPA sends a GET with the RS256 JWT cookie attached. The request goes to Kong, which validates the token before routing to the File Service.',
+    timing: '0 ms',
+  },
+  {
+    nodeId: 'kong', kind: 'http', phase: 'sync',
+    title: 'Gateway validates JWT',
+    summary: 'Kong\'s JWT plugin verifies the RS256 signature and checks the expiry. A valid token lets the request through to the File Service.',
+    protocol: 'HTTP · Kong JWT plugin → file-nginx :8083',
+    detail: 'The RS256 public key is loaded from Kong\'s consumer credential store. Invalid or expired tokens are rejected with HTTP 401 before they ever reach the service.',
+    timing: '~2 ms',
+  },
+  {
+    nodeId: 'file-nginx', kind: 'fastcgi', phase: 'sync',
+    title: 'Nginx passes to PHP-FPM',
+    summary: 'The Nginx reverse proxy forwards the request to the File Service\'s PHP-FPM worker using FastCGI.',
+    protocol: 'FastCGI · file-nginx :8083 → PHP-FPM :9000',
+    detail: 'Nginx on :8083 hands off the request via FastCGI pass to the file-app PHP-FPM pool on port 9000.',
+    timing: '~0.5 ms',
+  },
+  {
+    nodeId: 'file-app', kind: 'http', phase: 'sync',
+    title: 'Presigned URL generated',
+    summary: 'The File Service looks up your file record, calls the S3 SDK to generate a time-limited presigned URL, and returns it in the response.',
+    protocol: 'PHP-FPM · Laravel 12 · FileController',
+    detail: 'The controller resolves the authenticated user from the JWT sub claim, queries file-db for their files, and for each file calls $s3->createPresignedRequest() with a short TTL (e.g. 60 s). The signed URL is returned directly — no redirect, no proxy.',
+    payload: '{\n  "files": [\n    {\n      "id": "file-uuid",\n      "name": "contract-2026-04-23.pdf",\n      "size_bytes": 84320,\n      "download_url": "https://s3.../presigned?X-Amz-Signature=..."\n    }\n  ]\n}',
+    timing: '~10 ms',
+  },
+  {
+    nodeId: 'file-db', kind: 'db', phase: 'sync',
+    title: 'File metadata retrieved',
+    summary: 'PostgreSQL returns the S3 path, file name, size, and MIME type for every file belonging to this user.',
+    protocol: 'PostgreSQL · file-db :5434 · files table',
+    detail: 'A single SELECT with a WHERE user_id = ? filter retrieves all file rows. The S3 key from this row is then used to generate the presigned URL.',
+    payload: 'SELECT id, file_name, s3_key,\n       file_size, mime_type, created_at\nFROM   files\nWHERE  user_id = $1\nORDER  BY created_at DESC;',
+    timing: '~2 ms',
+  },
+  {
+    nodeId: 'localstack', kind: 'storage', phase: 'sync',
+    title: 'Presigned URL issued by S3',
+    summary: 'The AWS SDK signs the S3 object URL with a time-limited HMAC signature. After the TTL expires the URL stops working automatically.',
+    protocol: 'AWS S3 SDK · HMAC-SHA256 presigned GET',
+    detail: 'The SDK computes a Signature Version 4 presigned URL: it signs the bucket + object key + expiry timestamp using the AWS secret key. No actual network call is made here — the signature is computed in-process.',
+    payload: 'GET s3://dynadoc-files/orgs/<orgId>/\n    gen-uuid/contract-2026-04-23.pdf\n    ?X-Amz-Algorithm=AWS4-HMAC-SHA256\n    &X-Amz-Expires=60\n    &X-Amz-Signature=...',
+    timing: '~1 ms (in-process)',
+  },
+  {
+    nodeId: 'browser', kind: 'http', phase: 'sync',
+    title: 'PDF downloaded directly from S3',
+    summary: 'The browser follows the presigned URL directly to S3. The file streams from cloud storage to the user — without going through any application server.',
+    protocol: 'HTTPS · GET presigned S3 URL (direct)',
+    detail: 'The browser GETs the presigned URL. S3 validates the HMAC signature and streams the PDF binary back. The application server is completely out of the download path — zero load on PHP-FPM for the actual file transfer.',
+    timing: '~200 ms (streaming)',
+  },
+];
+
+// ─── Password Reset trace steps ───────────────────────────────────────────────
+const RESET_TRACE: TraceStepDef[] = [
+  {
+    nodeId: 'browser', kind: 'http', phase: 'sync',
+    title: 'Reset request submitted',
+    summary: 'The user enters their email on the Forgot Password page and submits the form. The browser sends the address to the User Service.',
+    protocol: 'HTTPS · POST /api/auth/forgot-password',
+    detail: 'This is a public endpoint — no JWT required. The SPA POSTs the email address. The response is always HTTP 200 regardless of whether the email exists, to prevent user enumeration.',
+    payload: '{\n  "email": "tharanga@example.com"\n}',
+    timing: '0 ms',
+  },
+  {
+    nodeId: 'kong', kind: 'http', phase: 'sync',
+    title: 'Kong routes the public endpoint',
+    summary: 'Kong recognises this as a public route — the JWT plugin is skipped. The request is forwarded directly to the User Service.',
+    protocol: 'HTTP · Kong (no JWT) → user-nginx :8081',
+    detail: 'The forgot-password route is declared in Kong with no JWT plugin attached. Kong applies CORS and rate-limiting (e.g. 5 req/min per IP) to prevent brute-force abuse, then routes to user-nginx.',
+    timing: '~1 ms',
+  },
+  {
+    nodeId: 'user-nginx', kind: 'fastcgi', phase: 'sync',
+    title: 'Nginx passes to PHP-FPM',
+    summary: 'The Nginx reverse proxy hands the request to the User Service\'s PHP-FPM pool via FastCGI.',
+    protocol: 'FastCGI · user-nginx :8081 → PHP-FPM :9000',
+    timing: '~0.5 ms',
+    detail: 'Nginx on :8081 forwards via fastcgi_pass to the user-app PHP-FPM pool on port 9000.',
+  },
+  {
+    nodeId: 'user-app', kind: 'http', phase: 'sync',
+    title: 'Token generated & HTTP 200 returned',
+    summary: 'Laravel generates a cryptographically secure reset token, stores its hash, and immediately returns HTTP 200 — the email is dispatched asynchronously via Kafka.',
+    protocol: 'PHP-FPM · Laravel 12 · ForgotPasswordHandler',
+    detail: 'The handler calls Password::createToken($user) to generate a 64-character random token, stores its SHA-256 hash in password_reset_tokens, then publishes a notification.send event to Kafka. HTTP 200 is returned before the email is sent.',
+    payload: '// Response (always 200, email or not)\n{\n  "message": "If that email is registered,\n              a reset link is on its way."\n}',
+    timing: '~5 ms · HTTP 200 returned',
+  },
+  {
+    nodeId: 'user-db', kind: 'db', phase: 'sync',
+    title: 'Token hash stored',
+    summary: 'The SHA-256 hash of the reset token is saved with the user\'s email and a timestamp. The plain-text token is never stored.',
+    protocol: 'PostgreSQL · user-db :5432 · password_reset_tokens',
+    detail: 'Only the hash is persisted — if the DB is breached, raw tokens cannot be used. The token expires after 60 minutes (configurable via RESET_TOKEN_TTL). Old tokens for the same email are replaced.',
+    payload: "INSERT INTO password_reset_tokens\n  (email, token, created_at)\nVALUES\n  ('tharanga@example.com',\n   sha256('random-64-char-token'),\n   NOW())\nON CONFLICT (email) DO UPDATE\n  SET token = excluded.token,\n      created_at = excluded.created_at;",
+    timing: '~2 ms',
+  },
+  {
+    nodeId: 'kafka1', kind: 'kafka', phase: 'async',
+    title: 'notification.send published',
+    summary: 'The User Service publishes the reset link to the notification.send Kafka topic. From here the email dispatch is fully asynchronous.',
+    protocol: 'rdkafka · acks=all · topic: notification.send · RF=1',
+    detail: 'The payload carries channel=email, the recipient address, template=password-reset, and data.reset_url. If Kafka is unavailable, a direct Mail::send fallback fires inline to guarantee delivery.',
+    payload: '// topic: notification.send  key: tharanga@example.com\n{\n  "channel":  "email",\n  "to":       "tharanga@example.com",\n  "template": "password-reset",\n  "subject":  "Reset your DynaDoc password",\n  "data": {\n    "reset_url": "https://ddoc.fi/reset?token=...&email=..."\n  }\n}',
+    timing: 'async · ~5 ms',
+  },
+  {
+    nodeId: 'notification-consumer', kind: 'worker', phase: 'async',
+    title: 'Notification consumer picks up event',
+    summary: 'The Notification Service\'s Kafka consumer dequeues the message and hands it to the SendNotificationHandler.',
+    protocol: 'Kafka Consumer · consumer group: notification-service',
+    detail: 'NotificationSendConsumer subscribes to notification.send. It deserialises the payload and calls SendNotificationHandler::handle(). The consumer loop continues running — a single failure is caught and logged without stopping the loop.',
+    timing: 'async · ~10 ms',
+  },
+  {
+    nodeId: 'notification-app', kind: 'http', phase: 'async',
+    title: 'Reset email dispatched via OVH SMTP',
+    summary: 'The Notification Service renders the password-reset Blade template and sends the email over SMTPS to OVH\'s mail relay.',
+    protocol: 'SMTPS · ssl0.ovh.net :465 · TemplateMail',
+    detail: 'EmailChannel resolves the emails.password-reset Blade view, passes reset_url into it, and calls Mail::to($to)->send(new TemplateMail(...)). Laravel\'s SMTP mailer opens an implicit TLS connection on port 465 and delivers the message.',
+    payload: 'From:    admin@ddoc.fi (DynaDoc)\nTo:      tharanga@example.com\nSubject: Reset your DynaDoc password\n\n[Blade-rendered HTML]\n  Hi Tharanga,\n  Click the button below to reset\n  your password. Link expires in 60 min.',
+    timing: 'async · ~300 ms (SMTP round-trip)',
+  },
+];
+
 // ─── Step kind metadata ───────────────────────────────────────────────────────
 const KIND_META: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   http:    { label: 'HTTP',     color: '#2563eb', bg: '#dbeafe', icon: <Globe          className="w-5 h-5" /> },
@@ -1830,10 +1966,16 @@ const ArchitecturePage: React.FC = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const [pdfStep, setPdfStep] = useState<number | null>(null);
   const [isPdfPlaying, setIsPdfPlaying] = useState(false);
+  const [downloadStep, setDownloadStep] = useState<number | null>(null);
+  const [isDownloadPlaying, setIsDownloadPlaying] = useState(false);
+  const [resetStep, setResetStep] = useState<number | null>(null);
+  const [isResetPlaying, setIsResetPlaying] = useState(false);
   const lastMouse = useRef({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pdfPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const downloadPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const resetPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevStatuses = useRef<Record<string, ServiceStatus>>({});
   const { data: health, isLoading, dataUpdatedAt } = useSystemHealth(10_000);
 
@@ -1941,8 +2083,10 @@ const ArchitecturePage: React.FC = () => {
   }, [selected, allServiceIds]);
 
   // Pause tracers when their flow is deselected
-  useEffect(() => { if (activeFlow !== 'auth')       setIsAutoPlaying(false); }, [activeFlow]);
-  useEffect(() => { if (activeFlow !== 'generation') setIsPdfPlaying(false);  }, [activeFlow]);
+  useEffect(() => { if (activeFlow !== 'auth')          setIsAutoPlaying(false);    }, [activeFlow]);
+  useEffect(() => { if (activeFlow !== 'generation')    setIsPdfPlaying(false);     }, [activeFlow]);
+  useEffect(() => { if (activeFlow !== 'download')      setIsDownloadPlaying(false);}, [activeFlow]);
+  useEffect(() => { if (activeFlow !== 'passwordReset') setIsResetPlaying(false);   }, [activeFlow]);
 
   // Auto-advance tracer
   useEffect(() => {
@@ -1964,9 +2108,9 @@ const ArchitecturePage: React.FC = () => {
   }, [isAutoPlaying]);
 
   const handleTracerPlay = useCallback(() => {
-    // stop PDF tracer if running
-    setIsPdfPlaying(false);
-    setPdfStep(null);
+    setIsPdfPlaying(false); setPdfStep(null);
+    setIsDownloadPlaying(false); setDownloadStep(null);
+    setIsResetPlaying(false); setResetStep(null);
     if (liveStep === null || liveStep >= AUTH_TRACE.length) setLiveStep(0);
     setIsAutoPlaying(true);
   }, [liveStep]);
@@ -2003,9 +2147,9 @@ const ArchitecturePage: React.FC = () => {
   }, [isPdfPlaying]);
 
   const handlePdfPlay = useCallback(() => {
-    // stop auth tracer if running
-    setIsAutoPlaying(false);
-    setLiveStep(null);
+    setIsAutoPlaying(false); setLiveStep(null);
+    setIsDownloadPlaying(false); setDownloadStep(null);
+    setIsResetPlaying(false); setResetStep(null);
     if (pdfStep === null || pdfStep >= PDF_TRACE.length) setPdfStep(0);
     setIsPdfPlaying(true);
   }, [pdfStep]);
@@ -2021,6 +2165,64 @@ const ArchitecturePage: React.FC = () => {
     setPdfStep(prev => Math.max((prev ?? 1) - 1, 0));
   }, []);
   const handlePdfStepTo = useCallback((i: number) => { setIsPdfPlaying(false); setPdfStep(i); }, []);
+
+  // Auto-advance Download tracer
+  useEffect(() => {
+    if (!isDownloadPlaying) {
+      if (downloadPlayRef.current) clearInterval(downloadPlayRef.current);
+      return;
+    }
+    downloadPlayRef.current = setInterval(() => {
+      setDownloadStep(prev => {
+        const next = (prev ?? -1) + 1;
+        if (next >= DOWNLOAD_TRACE.length) { setIsDownloadPlaying(false); return DOWNLOAD_TRACE.length; }
+        return next;
+      });
+    }, 1900);
+    return () => { if (downloadPlayRef.current) clearInterval(downloadPlayRef.current); };
+  }, [isDownloadPlaying]);
+
+  const handleDownloadPlay = useCallback(() => {
+    setIsAutoPlaying(false); setLiveStep(null);
+    setIsPdfPlaying(false);  setPdfStep(null);
+    setIsResetPlaying(false); setResetStep(null);
+    if (downloadStep === null || downloadStep >= DOWNLOAD_TRACE.length) setDownloadStep(0);
+    setIsDownloadPlaying(true);
+  }, [downloadStep]);
+  const handleDownloadPause  = useCallback(() => setIsDownloadPlaying(false), []);
+  const handleDownloadReset  = useCallback(() => { setIsDownloadPlaying(false); setDownloadStep(null); }, []);
+  const handleDownloadNext   = useCallback(() => { setIsDownloadPlaying(false); setDownloadStep(prev => Math.min((prev ?? -1) + 1, DOWNLOAD_TRACE.length)); }, []);
+  const handleDownloadPrev   = useCallback(() => { setIsDownloadPlaying(false); setDownloadStep(prev => Math.max((prev ?? 1) - 1, 0)); }, []);
+  const handleDownloadStepTo = useCallback((i: number) => { setIsDownloadPlaying(false); setDownloadStep(i); }, []);
+
+  // Auto-advance Password Reset tracer
+  useEffect(() => {
+    if (!isResetPlaying) {
+      if (resetPlayRef.current) clearInterval(resetPlayRef.current);
+      return;
+    }
+    resetPlayRef.current = setInterval(() => {
+      setResetStep(prev => {
+        const next = (prev ?? -1) + 1;
+        if (next >= RESET_TRACE.length) { setIsResetPlaying(false); return RESET_TRACE.length; }
+        return next;
+      });
+    }, 1900);
+    return () => { if (resetPlayRef.current) clearInterval(resetPlayRef.current); };
+  }, [isResetPlaying]);
+
+  const handleResetPlay = useCallback(() => {
+    setIsAutoPlaying(false); setLiveStep(null);
+    setIsPdfPlaying(false);  setPdfStep(null);
+    setIsDownloadPlaying(false); setDownloadStep(null);
+    if (resetStep === null || resetStep >= RESET_TRACE.length) setResetStep(0);
+    setIsResetPlaying(true);
+  }, [resetStep]);
+  const handleResetPause  = useCallback(() => setIsResetPlaying(false), []);
+  const handleResetReset  = useCallback(() => { setIsResetPlaying(false); setResetStep(null); }, []);
+  const handleResetNext   = useCallback(() => { setIsResetPlaying(false); setResetStep(prev => Math.min((prev ?? -1) + 1, RESET_TRACE.length)); }, []);
+  const handleResetPrev   = useCallback(() => { setIsResetPlaying(false); setResetStep(prev => Math.max((prev ?? 1) - 1, 0)); }, []);
+  const handleResetStepTo = useCallback((i: number) => { setIsResetPlaying(false); setResetStep(i); }, []);
 
   const flowStepMap = useMemo((): Record<string, number> => {
     if (!activeFlow) return {};
@@ -2044,10 +2246,24 @@ const ArchitecturePage: React.FC = () => {
     return { [PDF_TRACE[pdfStep].nodeId]: pdfStep + 1 };
   }, [pdfStep]);
 
-  const effectiveFlowStepMap = pdfStep !== null ? pdfTracerStepMap
+  const downloadTracerStepMap = useMemo((): Record<string, number> => {
+    if (downloadStep === null || downloadStep >= DOWNLOAD_TRACE.length) return {};
+    return { [DOWNLOAD_TRACE[downloadStep].nodeId]: downloadStep + 1 };
+  }, [downloadStep]);
+
+  const resetTracerStepMap = useMemo((): Record<string, number> => {
+    if (resetStep === null || resetStep >= RESET_TRACE.length) return {};
+    return { [RESET_TRACE[resetStep].nodeId]: resetStep + 1 };
+  }, [resetStep]);
+
+  const effectiveFlowStepMap = resetStep !== null ? resetTracerStepMap
+    : downloadStep !== null ? downloadTracerStepMap
+    : pdfStep !== null ? pdfTracerStepMap
     : liveStep !== null ? liveTracerStepMap
     : flowStepMap;
-  const effectiveFlowColor = pdfStep !== null ? '#0369a1'
+  const effectiveFlowColor = resetStep !== null ? '#db2777'
+    : downloadStep !== null ? '#1d4ed8'
+    : pdfStep !== null ? '#0369a1'
     : liveStep !== null ? '#003580'
     : activeFlowColor;
 
@@ -2269,7 +2485,7 @@ const ArchitecturePage: React.FC = () => {
         </div>
 
         {/* Flow path strip — only for flows without a dedicated tracer */}
-        {activeFlow && activeFlow !== 'auth' && activeFlow !== 'generation' && (
+        {activeFlow && !['auth', 'generation', 'download', 'passwordReset'].includes(activeFlow) && (
           <FlowPath flow={FLOWS[activeFlow]} />
         )}
 
@@ -2308,6 +2524,44 @@ const ArchitecturePage: React.FC = () => {
             onStepTo={handlePdfStepTo}
             onNext={handlePdfNext}
             onPrev={handlePdfPrev}
+          />
+        )}
+
+        {/* File download tracer */}
+        {activeFlow === 'download' && (
+          <MessageTracerPanel
+            title="File Download — Live Message Tracer"
+            subtitle="GET /api/files → Kong → file-app → S3 presigned URL → browser"
+            completionNote={`The download flow travels through ${DOWNLOAD_TRACE.length} components. The PDF streams directly from S3 to the browser — PHP-FPM handles only the presigned URL generation, not the file transfer itself.`}
+            color="#1d4ed8"
+            steps={DOWNLOAD_TRACE}
+            currentStep={downloadStep}
+            isPlaying={isDownloadPlaying}
+            onPlay={handleDownloadPlay}
+            onPause={handleDownloadPause}
+            onReset={handleDownloadReset}
+            onStepTo={handleDownloadStepTo}
+            onNext={handleDownloadNext}
+            onPrev={handleDownloadPrev}
+          />
+        )}
+
+        {/* Password reset tracer */}
+        {activeFlow === 'passwordReset' && (
+          <MessageTracerPanel
+            title="Password Reset — Live Message Tracer"
+            subtitle="POST /api/auth/forgot-password → user-app → Kafka → notification-consumer → OVH SMTP"
+            completionNote={`The reset flow spans ${RESET_TRACE.length} components across a Kafka hop. HTTP 200 is returned at step 4 — email delivery is fully async via the Notification Service.`}
+            color="#db2777"
+            steps={RESET_TRACE}
+            currentStep={resetStep}
+            isPlaying={isResetPlaying}
+            onPlay={handleResetPlay}
+            onPause={handleResetPause}
+            onReset={handleResetReset}
+            onStepTo={handleResetStepTo}
+            onNext={handleResetNext}
+            onPrev={handleResetPrev}
           />
         )}
       </div>
