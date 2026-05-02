@@ -10,6 +10,4 @@ return [
     'fallback_locale' => 'en',
     'key'             => env('APP_KEY'),
     'cipher'          => 'AES-256-CBC',
-    'providers'       => [],
-    'aliases'         => [],
 ];
