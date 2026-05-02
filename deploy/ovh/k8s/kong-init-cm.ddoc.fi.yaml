@@ -36,6 +36,10 @@ data:
       --data 'paths[]=/api/auth/reset-password' \
       --data 'strip_path=false'
 
+    curl -s -X POST "$KONG_ADMIN/services/user-service/routes" \
+      --data 'paths[]=/api/health/system' \
+      --data 'strip_path=false'
+
     curl -s -X POST "$KONG_ADMIN/services" \
       --data name=template-service \
       --data "url=$TEMPLATE_SVC"
