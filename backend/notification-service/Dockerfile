@@ -16,6 +16,12 @@ COPY . .
 RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-interaction --prefer-dist --no-dev --no-scripts \
     && composer dump-autoload --optimize --no-scripts
 
+RUN mkdir -p bootstrap/cache \
+        storage/logs \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views
+
 # Bake the package manifest so both web and consumer containers skip discovery at runtime
 RUN APP_KEY=base64:dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdGtleQ== \
     php artisan package:discover --ansi 2>/dev/null || true
