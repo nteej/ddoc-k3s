@@ -134,6 +134,12 @@ spec:
               value: admin@ddoc.fi
             - name: MAIL_FROM_NAME
               value: DynaDoc
+            - name: CACHE_STORE
+              value: array
+            - name: DB_CONNECTION
+              value: sqlite
+            - name: DB_DATABASE
+              value: ":memory:"
 ---
 apiVersion: v1
 kind: Service
