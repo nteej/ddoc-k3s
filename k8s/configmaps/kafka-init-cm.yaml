@@ -56,6 +56,7 @@ data:
     create_topic "audit.events" 3 1
     create_topic "webhook.dispatch" 3 1
     create_topic "notification.dispatch" 3 1
+    create_topic "notification.send" 3 1
     create_topic "quota.exceeded" 3 1
 
     echo "Topics created (or already existed)."

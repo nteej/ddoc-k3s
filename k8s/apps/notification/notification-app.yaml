@@ -1,0 +1,148 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-app
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-app
+  template:
+    metadata:
+      labels:
+        app: notification-app
+    spec:
+      initContainers:
+        - name: copy-public
+          image: REGISTRY/dynadoc/notification-service:latest
+          command:
+            - sh
+            - -c
+            - "cp -r /var/www/html/public/. /mnt/public/ && chown -R 33:33 /mnt/public"
+          volumeMounts:
+            - name: public-files
+              mountPath: /mnt/public
+      containers:
+        - name: php-fpm
+          image: REGISTRY/dynadoc/notification-service:latest
+          ports:
+            - containerPort: 9000
+          env:
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: notification-app-secret
+                  key: APP_KEY
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: "false"
+            - name: KAFKA_BROKERS
+              value: kafka-svc.dynadoc.svc.cluster.local:9092
+            - name: KAFKA_CONSUMER_GROUP_ID
+              value: notification-service
+            - name: MAIL_MAILER
+              value: smtp
+            - name: MAIL_HOST
+              value: ssl0.ovh.net
+            - name: MAIL_PORT
+              value: "465"
+            - name: MAIL_SCHEME
+              value: smtps
+            - name: MAIL_USERNAME
+              value: admin@ddoc.fi
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: notification-app-secret
+                  key: MAIL_PASSWORD
+            - name: MAIL_FROM_ADDRESS
+              value: admin@ddoc.fi
+            - name: MAIL_FROM_NAME
+              value: DynaDoc
+          volumeMounts:
+            - name: public-files
+              mountPath: /var/www/html/public
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: notification.conf
+            - name: public-files
+              mountPath: /var/www/html/public
+              readOnly: true
+      volumes:
+        - name: public-files
+          emptyDir: {}
+        - name: nginx-config
+          configMap:
+            name: nginx-configs
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-consumer
+  namespace: dynadoc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-consumer
+  template:
+    metadata:
+      labels:
+        app: notification-consumer
+    spec:
+      containers:
+        - name: notification-consumer
+          image: REGISTRY/dynadoc/notification-service:latest
+          command: ["php", "/var/www/html/artisan", "kafka:consume-notifications"]
+          env:
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: notification-app-secret
+                  key: APP_KEY
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: "false"
+            - name: KAFKA_BROKERS
+              value: kafka-svc.dynadoc.svc.cluster.local:9092
+            - name: KAFKA_CONSUMER_GROUP_ID
+              value: notification-service
+            - name: MAIL_MAILER
+              value: smtp
+            - name: MAIL_HOST
+              value: ssl0.ovh.net
+            - name: MAIL_PORT
+              value: "465"
+            - name: MAIL_SCHEME
+              value: smtps
+            - name: MAIL_USERNAME
+              value: admin@ddoc.fi
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: notification-app-secret
+                  key: MAIL_PASSWORD
+            - name: MAIL_FROM_ADDRESS
+              value: admin@ddoc.fi
+            - name: MAIL_FROM_NAME
+              value: DynaDoc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-svc
+  namespace: dynadoc
+spec:
+  selector:
+    app: notification-app
+  ports:
+    - port: 80
+      targetPort: 80

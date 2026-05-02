@@ -54,6 +54,8 @@ spec:
               value: production
             - name: APP_DEBUG
               value: "false"
+            - name: KAFKA_BROKERS
+              value: kafka-svc.dynadoc.svc.cluster.local:9092
             - name: OTEL_PHP_AUTOLOAD_ENABLED
               value: "true"
             - name: OTEL_SERVICE_NAME

@@ -6,8 +6,10 @@ namespace App\Application\Handlers;
 
 use App\Application\DTOs\ForgotPasswordInputDTO;
 use App\Domain\Repositories\UserRepositoryInterface;
+use App\Infrastructure\Kafka\Producers\KafkaProducer;
 use App\Infrastructure\Mail\PasswordResetMail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -15,6 +17,7 @@ final readonly class ForgotPasswordHandler
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
+        private KafkaProducer           $producer,
     ) {}
 
     public function execute(ForgotPasswordInputDTO $input): ?string
@@ -41,8 +44,35 @@ final readonly class ForgotPasswordHandler
             . '/reset-password?token=' . $token
             . '&email=' . urlencode($input->email);
 
-        Mail::to($input->email)->send(new PasswordResetMail($resetUrl));
+        $this->dispatchNotification($input->email, $resetUrl);
 
         return $token;
+    }
+
+    private function dispatchNotification(string $email, string $resetUrl): void
+    {
+        try {
+            $this->producer->send(
+                topic: 'notification.send',
+                payload: [
+                    'channel'  => 'email',
+                    'to'       => $email,
+                    'template' => 'password-reset',
+                    'subject'  => 'Reset your DynaDoc password',
+                    'data'     => ['reset_url' => $resetUrl],
+                ],
+                key: $email,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Kafka unavailable for password reset, falling back to direct mail', [
+                'error' => $e->getMessage(),
+            ]);
+
+            try {
+                Mail::to($email)->send(new PasswordResetMail($resetUrl));
+            } catch (\Throwable) {
+                // best-effort
+            }
+        }
     }
 }

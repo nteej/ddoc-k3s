@@ -12,6 +12,7 @@ data:
     TEMPLATE_SVC="http://template-svc.dynadoc.svc.cluster.local:80"
     FILE_SVC="http://file-svc.dynadoc.svc.cluster.local:80"
     AUDIT_SVC="http://audit-svc.dynadoc.svc.cluster.local:80"
+    NOTIFICATION_SVC="http://notification-svc.dynadoc.svc.cluster.local:80"
     FRONTEND_ORIGIN="https://ddoc.fi"
 
     echo "Waiting for Kong Admin API..."
@@ -70,6 +71,21 @@ data:
     curl -s -X POST "$KONG_ADMIN/services/audit-service/routes" \
       --data 'paths[]=/api/audit-logs' \
       --data 'strip_path=false'
+
+    curl -s -X POST "$KONG_ADMIN/services" \
+      --data name=notification-service \
+      --data "url=$NOTIFICATION_SVC"
+
+    curl -s -X POST "$KONG_ADMIN/services/notification-service/routes" \
+      --data 'paths[]=/api/notifications/send' \
+      --data 'strip_path=false'
+
+    curl -s -X POST "$KONG_ADMIN/services/notification-service/plugins" \
+      --data "name=jwt" \
+      --data "config.key_claim_name=iss" \
+      --data "config.claims_to_verify=exp" \
+      --data "config.run_on_preflight=false" \
+      --data "config.cookie_names=token"
 
     echo "Creating consumer and JWT credential..."
 
