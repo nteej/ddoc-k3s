@@ -29,7 +29,7 @@ final readonly class FindByFiltersFileHandler
             $apiGateway = new ApiGatewayService(
                 host: config('app.host_internal_services.template'),
                 verb: 'get',
-                route: '/templates/filters',
+                route: '/api/templates/filters',
                 filters: ['id' => $file->templateId],
             );
 
