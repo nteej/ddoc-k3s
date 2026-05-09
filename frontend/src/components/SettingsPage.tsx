@@ -194,6 +194,7 @@ const SettingsPage: React.FC = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
   const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
+  const isOwner = user?.role === 'owner';
   const tagTypes = useMemo(() => makeTagTypes(t), [t]);
   const getTypeConfig = (type: string) => tagTypes.find(tg => tg.value === type) ?? tagTypes[0];
 
@@ -373,7 +374,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="tags" className="w-full">
-        <TabsList className={`grid w-full glass-card border-gray-200 ${isAdminOrOwner ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <TabsList className={`grid w-full glass-card border-gray-200 ${isOwner ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="tags" className="data-[state=active]:bg-gray-200">
             <TagIcon className="w-4 h-4 mr-2" />
             {t('settings.manageTags')}
@@ -382,7 +383,7 @@ const SettingsPage: React.FC = () => {
             <FolderOpen className="w-4 h-4 mr-2" />
             {t('settings.manageContexts')}
           </TabsTrigger>
-          {isAdminOrOwner && (
+          {isOwner && (
             <TabsTrigger value="global" className="data-[state=active]:bg-gray-200">
               <Settings className="w-4 h-4 mr-2" />
               Global Settings
@@ -398,7 +399,7 @@ const SettingsPage: React.FC = () => {
               <p className="text-gray-500">{t('settings.dynamicTagsDesc')}</p>
             </div>
 
-            <Dialog open={showNewTagModal} onOpenChange={open => { setShowNewTagModal(open); if (!open) setTagFormData(emptyTagData()); }}>
+            {isAdminOrOwner && <Dialog open={showNewTagModal} onOpenChange={open => { setShowNewTagModal(open); if (!open) setTagFormData(emptyTagData()); }}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-900 hover:bg-blue-800 text-white">
                   <Plus className="w-4 h-4 mr-2" />
@@ -418,7 +419,7 @@ const SettingsPage: React.FC = () => {
                   disabled={!isTagFormValid(tagFormData)}
                 />
               </DialogContent>
-            </Dialog>
+            </Dialog>}
           </div>
 
           {tags.length === 0 ? (
@@ -445,7 +446,7 @@ const SettingsPage: React.FC = () => {
                                 {cfg.icon}
                                 {cfg.label}
                               </Badge>
-                              <div className="flex gap-1">
+                              {isAdminOrOwner && <div className="flex gap-1">
                                 <Button variant="ghost" size="sm" onClick={() => handleEditTag(tag)} className="h-6 w-6 p-0">
                                   <Edit className="w-3 h-3" />
                                 </Button>
@@ -466,7 +467,7 @@ const SettingsPage: React.FC = () => {
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
-                              </div>
+                              </div>}
                             </div>
                             <CardTitle className="text-sm font-mono">#{tag.name}#</CardTitle>
                           </CardHeader>
@@ -517,7 +518,7 @@ const SettingsPage: React.FC = () => {
               <p className="text-gray-500">{t('settings.contextsDesc')}</p>
             </div>
 
-            <Dialog open={showNewContextModal} onOpenChange={open => { setShowNewContextModal(open); if (!open) setContextFormData({ name: '', description: '' }); }}>
+            {isAdminOrOwner && <Dialog open={showNewContextModal} onOpenChange={open => { setShowNewContextModal(open); if (!open) setContextFormData({ name: '', description: '' }); }}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-900 hover:bg-blue-800 text-white">
                   <Plus className="w-4 h-4 mr-2" />
@@ -546,7 +547,7 @@ const SettingsPage: React.FC = () => {
                   disabled={!contextFormData.name.trim()}
                 />
               </DialogContent>
-            </Dialog>
+            </Dialog>}
           </div>
 
           {contexts.length === 0 ? (
@@ -569,7 +570,7 @@ const SettingsPage: React.FC = () => {
                           <FolderOpen className="w-5 h-5 text-blue-700" />
                           <CardTitle className="text-lg">{context.name}</CardTitle>
                         </div>
-                        <div className="flex gap-1">
+                        {isAdminOrOwner && <div className="flex gap-1">
                           <Button variant="ghost" size="sm" onClick={() => handleEditContext(context)} className="h-8 w-8 p-0">
                             <Edit className="w-4 h-4" />
                           </Button>
@@ -590,7 +591,7 @@ const SettingsPage: React.FC = () => {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                        </div>
+                        </div>}
                       </div>
                       <CardDescription className="text-gray-700">{context.description || t('common.noDescription')}</CardDescription>
                     </CardHeader>
@@ -629,8 +630,8 @@ const SettingsPage: React.FC = () => {
           </Dialog>
         </TabsContent>
 
-        {/* Global Settings Tab (admin/owner only) */}
-        {isAdminOrOwner && (
+        {/* Global Settings Tab (owner only) */}
+        {isOwner && (
           <TabsContent value="global" className="space-y-8">
             <GlobalSettingsTab />
           </TabsContent>

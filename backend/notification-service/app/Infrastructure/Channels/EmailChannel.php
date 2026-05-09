@@ -15,6 +15,7 @@ class EmailChannel
             template: $payload['template'] ?? 'generic',
             mailSubject: $payload['subject'] ?? config('mail.from.name') . ' Notification',
             data: $payload['data'] ?? [],
+            storageAttachments: $payload['attachments'] ?? [],
         ));
     }
 }

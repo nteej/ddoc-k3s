@@ -134,6 +134,18 @@ spec:
               value: admin@ddoc.fi
             - name: MAIL_FROM_NAME
               value: DynaDoc
+            - name: AWS_ACCESS_KEY_ID
+              value: test
+            - name: AWS_SECRET_ACCESS_KEY
+              value: test
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+            - name: AWS_BUCKET
+              value: files
+            - name: AWS_ENDPOINT
+              value: http://localstack-svc.dynadoc.svc.cluster.local:4566
+            - name: AWS_USE_PATH_STYLE_ENDPOINT
+              value: "true"
             - name: CACHE_STORE
               value: array
             - name: DB_CONNECTION
