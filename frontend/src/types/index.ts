@@ -181,3 +181,62 @@ export interface GeneratedFilesResponse {
   page: number;
   totalPages: number;
 }
+
+export interface FileEmailLog {
+  id: string;
+  file_id: string;
+  sent_by_user_id: string;
+  recipient_email: string;
+  message: string | null;
+  status: 'sent' | 'failed';
+  error_message: string | null;
+  sent_at: string;
+}
+
+export interface FileDownloadLog {
+  id: string;
+  file_id: string;
+  downloaded_by_user_id: string;
+  ip_address: string | null;
+  downloaded_at: string;
+}
+
+export interface Package {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price_monthly: number;
+  price_yearly: number;
+  max_api_keys: number;
+  max_members: number;
+  max_monthly_generations: number;
+  max_file_storage_mb: number;
+  features: string[];
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface PackageUsage {
+  api_keys: number;
+  members: number;
+  monthly_generations: number;
+}
+
+export interface PackageUpgradeRequest {
+  id: string;
+  organization_id: string;
+  organization_name?: string;
+  current_package_slug: string;
+  requested_package_id: string;
+  requested_package_name?: string;
+  requested_package_slug?: string;
+  payment_reference: string | null;
+  payment_method: string;
+  status: 'pending' | 'approved' | 'rejected';
+  approved_by_user_id: string | null;
+  rejection_reason: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+}

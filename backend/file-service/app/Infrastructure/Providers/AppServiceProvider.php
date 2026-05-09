@@ -5,8 +5,12 @@ namespace App\Infrastructure\Providers;
 use App\Application\Events\TemplateRequestedEvent;
 use App\Application\Listeners\TemplateRequestedListener;
 use App\Domain\Exceptions\ExceptionHandler;
+use App\Domain\Repositories\FileDownloadLogRepositoryInterface;
+use App\Domain\Repositories\FileEmailLogRepositoryInterface;
 use App\Domain\Repositories\FileRepositoryInterface;
 use App\Infrastructure\Helpers\LoggedUserHelper;
+use App\Infrastructure\Repositories\FileDownloadLogRepository;
+use App\Infrastructure\Repositories\FileEmailLogRepository;
 use App\Infrastructure\Repositories\FileRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -37,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->bind(FileRepositoryInterface::class, FileRepository::class);
+        $this->app->bind(FileEmailLogRepositoryInterface::class, FileEmailLogRepository::class);
+        $this->app->bind(FileDownloadLogRepositoryInterface::class, FileDownloadLogRepository::class);
 
         Event::listen(
             TemplateRequestedEvent::class,

@@ -6,6 +6,7 @@ namespace App\Application\Handlers;
 
 use App\Domain\Repositories\FileRepositoryInterface;
 use App\Domain\Services\FileStorageService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final readonly class DestroyFileHandler
@@ -15,7 +16,7 @@ final readonly class DestroyFileHandler
         private FileStorageService      $fileStorageService,
     ) {}
 
-    public function execute(string $fileId): bool
+    public function execute(string $fileId, string $callerUserId, string $callerRole): bool
     {
         $file = $this->fileRepository->findOneById($fileId);
 
@@ -23,7 +24,13 @@ final readonly class DestroyFileHandler
             throw new NotFoundHttpException('File not found');
         }
 
-        // Delete from storage first; if storage delete fails we still remove the DB record
+        $isOwner = $file->userId === $callerUserId;
+        $isAdmin = in_array($callerRole, ['admin', 'owner'], true);
+
+        if (!$isOwner && !$isAdmin) {
+            throw new AccessDeniedHttpException('You do not have permission to delete this file.');
+        }
+
         if ($file->path) {
             $this->fileStorageService->delete($file->path, $file->storageDisk);
         }

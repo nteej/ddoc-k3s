@@ -9,6 +9,8 @@ use App\Domain\Repositories\UserRepositoryInterface;
 use App\Infrastructure\Repositories\ApiKeyRepository;
 use App\Infrastructure\Repositories\NotificationRepository;
 use App\Infrastructure\Repositories\OrganizationRepository;
+use App\Infrastructure\Repositories\PackageRepository;
+use App\Infrastructure\Repositories\PackageUpgradeRequestRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Repositories\WebhookRepository;
 use Illuminate\Support\Facades\Event;
@@ -34,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ApiKeyRepository::class);
         $this->app->singleton(WebhookRepository::class);
         $this->app->singleton(NotificationRepository::class);
+        $this->app->singleton(PackageRepository::class);
+        $this->app->singleton(PackageUpgradeRequestRepository::class);
 
         Event::listen(
             UserLoggedIn::class,

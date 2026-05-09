@@ -12,8 +12,9 @@ use Illuminate\Mail\Mailables\Envelope;
 final class PdfAttachmentMail extends Mailable
 {
     public function __construct(
-        private readonly string $fileName,
-        private readonly string $pdfContent,
+        private readonly string  $fileName,
+        private readonly string  $pdfContent,
+        private readonly ?string $message = null,
     ) {}
 
     public function envelope(): Envelope
@@ -41,9 +42,14 @@ final class PdfAttachmentMail extends Mailable
     private function buildHtml(): string
     {
         $name = htmlspecialchars($this->fileName);
+        $body = $this->message
+            ? '<p>' . nl2br(htmlspecialchars($this->message)) . '</p>'
+            : "<p>Please find your generated document <strong>{$name}</strong> attached to this email.</p>";
+
         return <<<HTML
         <p>Hello,</p>
-        <p>Please find your generated document <strong>{$name}</strong> attached to this email.</p>
+        {$body}
+        <p>Document: <strong>{$name}</strong></p>
         <p>Thank you for using DynaDoc.</p>
         HTML;
     }

@@ -9,18 +9,18 @@ use App\Domain\Entities\OrganizationMember;
 use App\Infrastructure\Kafka\Producers\KafkaProducer;
 use App\Infrastructure\Repositories\ApiKeyRepository;
 use App\Infrastructure\Repositories\OrganizationRepository;
+use App\Infrastructure\Repositories\PackageRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ApiKeyController extends BaseController
 {
-    private const PLAN_LIMITS = ['free' => 1, 'pro' => 5, 'enterprise' => PHP_INT_MAX];
-
     public function __construct(
         private readonly ApiKeyRepository       $keyRepo,
         private readonly OrganizationRepository $orgRepo,
         private readonly KafkaProducer          $kafka,
+        private readonly PackageRepository      $packageRepo,
     ) {}
 
     // GET /api-keys
@@ -49,7 +49,10 @@ class ApiKeyController extends BaseController
         ]);
 
         $org   = $this->orgRepo->findById($claims['organizationId']);
-        $limit = self::PLAN_LIMITS[$org?->plan ?? 'free'] ?? 1;
+        $pkg   = $org?->packageId
+            ? $this->packageRepo->findById($org->packageId)
+            : $this->packageRepo->findBySlug($org?->plan ?? 'free');
+        $limit = ($pkg && $pkg->maxApiKeys !== -1) ? $pkg->maxApiKeys : ($pkg ? PHP_INT_MAX : 1);
         $count = $this->keyRepo->countForOrg($claims['organizationId']);
 
         if ($count >= $limit) {

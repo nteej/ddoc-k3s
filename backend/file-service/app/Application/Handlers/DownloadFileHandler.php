@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace App\Application\Handlers;
 
+use App\Domain\Entities\File;
+use App\Domain\Entities\FileDownloadLog;
+use App\Domain\Repositories\FileDownloadLogRepositoryInterface;
 use App\Domain\Repositories\FileRepositoryInterface;
 use App\Domain\Services\FileStorageService;
-use App\Domain\Entities\File;
 use Exception;
 
 final readonly class DownloadFileHandler
 {
     public function __construct(
-        private FileRepositoryInterface $fileRepository,
-        private FileStorageService      $fileStorageService,
+        private FileRepositoryInterface          $fileRepository,
+        private FileStorageService               $fileStorageService,
+        private FileDownloadLogRepositoryInterface $downloadLogRepository,
     ) {}
 
-    public function execute(string $fileId): object
+    public function execute(string $fileId, string $userId, ?string $ipAddress = null): object
     {
         $file = $this->fileRepository->findAllUsingFilters(['id' => $fileId])[0] ?? null;
 
@@ -28,9 +31,13 @@ final readonly class DownloadFileHandler
             throw new Exception("File {$fileId} has no storage path yet.");
         }
 
-        $disk = $file->storageDisk;
+        $content = $this->fileStorageService->download($file->path, $file->storageDisk);
 
-        $content = $this->fileStorageService->download($file->path, $disk);
+        $this->downloadLogRepository->insert(FileDownloadLog::create(
+            fileId:             $fileId,
+            downloadedByUserId: $userId,
+            ipAddress:          $ipAddress,
+        ));
 
         return (object)[
             'name'    => $file->name,

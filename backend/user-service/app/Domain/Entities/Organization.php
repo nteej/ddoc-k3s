@@ -10,12 +10,14 @@ use InvalidArgumentException;
 final class Organization
 {
     private function __construct(
-        public readonly string $id,
-        public readonly string $name,
-        public readonly string $slug,
-        public readonly string $plan,
-        public readonly string $ownerId,
-        public readonly int    $maxMembers,
+        public readonly string  $id,
+        public readonly string  $name,
+        public readonly string  $slug,
+        public readonly string  $plan,
+        public readonly string  $ownerId,
+        public readonly int     $maxMembers,
+        public readonly ?string $packageId = null,
+        public readonly int     $monthlyGenerationCount = 0,
     ) {
         if (!Str::isUuid($id))       throw new InvalidArgumentException("Invalid organization id: $id");
         if (trim($name) === '')      throw new InvalidArgumentException('Organization name cannot be empty');
@@ -35,14 +37,16 @@ final class Organization
     }
 
     public static function restore(
-        string $id,
-        string $name,
-        string $slug,
-        string $plan,
-        string $ownerId,
-        int    $maxMembers,
+        string  $id,
+        string  $name,
+        string  $slug,
+        string  $plan,
+        string  $ownerId,
+        int     $maxMembers,
+        ?string $packageId = null,
+        int     $monthlyGenerationCount = 0,
     ): self {
-        return new self($id, $name, $slug, $plan, $ownerId, $maxMembers);
+        return new self($id, $name, $slug, $plan, $ownerId, $maxMembers, $packageId, $monthlyGenerationCount);
     }
 
     private static function slugify(string $name): string

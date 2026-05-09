@@ -1,14 +1,30 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, FileText, Calendar, Loader2, RefreshCw, AlertCircle, CheckCircle, Mail } from 'lucide-react';
+import {
+  Download, FileText, Calendar, Loader2, RefreshCw, AlertCircle,
+  CheckCircle, Mail, Trash2, History, Send,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { GeneratedFile, GeneratedFilesResponse } from '@/types';
+import { GeneratedFile, GeneratedFilesResponse, FileEmailLog, FileDownloadLog } from '@/types';
 import api from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Pagination, PaginationContent, PaginationItem,
+  PaginationLink, PaginationNext, PaginationPrevious,
+} from '@/components/ui/pagination';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
@@ -20,19 +36,33 @@ const FilesPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
+
   const [filesData, setFilesData] = useState<GeneratedFilesResponse>({
-    files: [],
-    total: 0,
-    page: 1,
-    totalPages: 0
+    files: [], total: 0, page: 1, totalPages: 0,
   });
   const [loading, setLoading] = useState(true);
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [sendingEmailFiles, setSendingEmailFiles] = useState<Set<string>>(new Set());
+  const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
+
+  // Email dialog
   const [emailDialogFile, setEmailDialogFile] = useState<GeneratedFile | null>(null);
   const [emailInput, setEmailInput] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+
+  // History dialog
+  const [historyFile, setHistoryFile] = useState<GeneratedFile | null>(null);
+  const [emailHistory, setEmailHistory] = useState<FileEmailLog[]>([]);
+  const [downloadHistory, setDownloadHistory] = useState<FileDownloadLog[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Delete confirm
+  const [deleteConfirmFile, setDeleteConfirmFile] = useState<GeneratedFile | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
 
   const startPolling = (fast: boolean) => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -81,11 +111,7 @@ const FilesPage: React.FC = () => {
         variant: 'destructive',
       });
     } finally {
-      setDownloadingFiles(prev => {
-        const next = new Set(prev);
-        next.delete(fileId);
-        return next;
-      });
+      setDownloadingFiles(prev => { const n = new Set(prev); n.delete(fileId); return n; });
     }
   };
 
@@ -94,16 +120,63 @@ const FilesPage: React.FC = () => {
     const fileId = emailDialogFile.id;
     try {
       setSendingEmailFiles(prev => new Set(prev).add(fileId));
-      await api.sendFileEmail(fileId, emailInput);
+      await api.sendFileEmail(fileId, emailInput, emailMessage || undefined);
       setEmailDialogFile(null);
       setEmailInput('');
+      setEmailMessage('');
       toast({ title: t('files.sendEmailSuccess'), description: t('files.sendEmailSuccessDesc') });
-    } catch {
-      toast({ title: t('files.sendEmailFailed'), description: t('files.sendEmailFailedDesc'), variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({
+        title: t('files.sendEmailFailed'),
+        description: err instanceof Error ? err.message : t('files.sendEmailFailedDesc'),
+        variant: 'destructive',
+      });
     } finally {
-      setSendingEmailFiles(prev => { const next = new Set(prev); next.delete(fileId); return next; });
+      setSendingEmailFiles(prev => { const n = new Set(prev); n.delete(fileId); return n; });
     }
   };
+
+  const handleOpenHistory = async (file: GeneratedFile) => {
+    setHistoryFile(file);
+    setHistoryLoading(true);
+    setEmailHistory([]);
+    setDownloadHistory([]);
+    try {
+      const [emails, downloads] = await Promise.all([
+        api.getFileEmailHistory(file.id),
+        api.getFileDownloadHistory(file.id),
+      ]);
+      setEmailHistory(emails);
+      setDownloadHistory(downloads);
+    } catch {
+      toast({ title: 'Failed to load history', variant: 'destructive' });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmFile) return;
+    const fileId = deleteConfirmFile.id;
+    setDeleteConfirmFile(null);
+    try {
+      setDeletingFiles(prev => new Set(prev).add(fileId));
+      await api.deleteFile(fileId);
+      toast({ title: 'File deleted successfully' });
+      loadFiles(true);
+    } catch (err: unknown) {
+      toast({
+        title: 'Delete failed',
+        description: err instanceof Error ? err.message : 'Failed to delete file',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeletingFiles(prev => { const n = new Set(prev); n.delete(fileId); return n; });
+    }
+  };
+
+  const canDelete = (file: GeneratedFile) =>
+    isAdminOrOwner || file.userId === user?.id;
 
   const getStatusBadge = (file: GeneratedFile) => {
     if (file.status === 2) {
@@ -115,9 +188,7 @@ const FilesPage: React.FC = () => {
     }
     if (file.status === 3) {
       let errorMsg = t('files.statusError');
-      try {
-        if (file.errors) errorMsg = JSON.parse(file.errors).join(', ');
-      } catch { /* keep default */ }
+      try { if (file.errors) errorMsg = JSON.parse(file.errors).join(', '); } catch { /* keep default */ }
       return (
         <span className="flex items-center gap-1 text-xs text-red-400" title={errorMsg}>
           <AlertCircle className="w-3.5 h-3.5" /> {t('files.statusError')}
@@ -135,9 +206,7 @@ const FilesPage: React.FC = () => {
     try {
       const locale = dateFnsLocales[i18n.language] ?? enUS;
       return format(new Date(dateString), 'dd/MM/yyyy HH:mm', { locale });
-    } catch {
-      return dateString;
-    }
+    } catch { return dateString; }
   };
 
   if (loading) {
@@ -190,8 +259,10 @@ const FilesPage: React.FC = () => {
                     <th className="text-left py-3 px-4 font-semibold">{t('files.colTemplate')}</th>
                     <th className="text-left py-3 px-4 font-semibold">{t('files.colStatus')}</th>
                     <th className="text-left py-3 px-4 font-semibold">{t('files.colGeneratedAt')}</th>
+                    <th className="text-center py-3 px-4 font-semibold">History</th>
                     <th className="text-right py-3 px-4 font-semibold">{t('files.colDownload')}</th>
                     <th className="text-right py-3 px-4 font-semibold">{t('files.sendEmail')}</th>
+                    <th className="text-right py-3 px-4 font-semibold">Delete</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,6 +286,17 @@ const FilesPage: React.FC = () => {
                           {formatDate(file.createdAt)}
                         </div>
                       </td>
+                      <td className="py-4 px-4 text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenHistory(file)}
+                          className="hover:bg-purple-500/20"
+                          title="View sending & download history"
+                        >
+                          <History className="w-4 h-4" />
+                        </Button>
+                      </td>
                       <td className="py-4 px-4 text-right">
                         <Button
                           variant="ghost"
@@ -224,28 +306,40 @@ const FilesPage: React.FC = () => {
                           className="hover:bg-green-500/20 disabled:opacity-30"
                           title={!file.readyToDownload ? t('files.fileNotReady') : t('files.downloadPdf')}
                         >
-                          {downloadingFiles.has(file.id) ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Download className="w-4 h-4" />
-                          )}
+                          {downloadingFiles.has(file.id)
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <Download className="w-4 h-4" />}
                         </Button>
                       </td>
                       <td className="py-4 px-4 text-right">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => { setEmailDialogFile(file); setEmailInput(''); }}
+                          onClick={() => { setEmailDialogFile(file); setEmailInput(''); setEmailMessage(''); }}
                           disabled={!file.readyToDownload || sendingEmailFiles.has(file.id)}
                           className="hover:bg-blue-500/20 disabled:opacity-30"
                           title={!file.readyToDownload ? t('files.fileNotReady') : t('files.sendEmail')}
                         >
-                          {sendingEmailFiles.has(file.id) ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Mail className="w-4 h-4" />
-                          )}
+                          {sendingEmailFiles.has(file.id)
+                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                            : <Mail className="w-4 h-4" />}
                         </Button>
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        {canDelete(file) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteConfirmFile(file)}
+                            disabled={deletingFiles.has(file.id)}
+                            className="hover:bg-red-500/20 text-red-500 disabled:opacity-30"
+                            title="Delete file"
+                          >
+                            {deletingFiles.has(file.id)
+                              ? <Loader2 className="w-4 h-4 animate-spin" />
+                              : <Trash2 className="w-4 h-4" />}
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -288,25 +382,40 @@ const FilesPage: React.FC = () => {
         </div>
       )}
 
-      <Dialog open={!!emailDialogFile} onOpenChange={open => { if (!open) { setEmailDialogFile(null); setEmailInput(''); } }}>
+      {/* Send Email Dialog */}
+      <Dialog open={!!emailDialogFile} onOpenChange={open => { if (!open) { setEmailDialogFile(null); setEmailInput(''); setEmailMessage(''); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('files.sendEmailDialogTitle')}</DialogTitle>
             <DialogDescription>{t('files.sendEmailDialogDesc')}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="email-recipient">Email</Label>
-            <Input
-              id="email-recipient"
-              type="email"
-              placeholder={t('files.sendEmailPlaceholder')}
-              value={emailInput}
-              onChange={e => setEmailInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSendEmail(); }}
-            />
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="email-recipient">Email</Label>
+              <Input
+                id="email-recipient"
+                type="email"
+                placeholder={t('files.sendEmailPlaceholder')}
+                value={emailInput}
+                onChange={e => setEmailInput(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email-message">Message (optional)</Label>
+              <Textarea
+                id="email-message"
+                placeholder="Add a personal message to accompany the document..."
+                value={emailMessage}
+                onChange={e => setEmailMessage(e.target.value)}
+                maxLength={1000}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-gray-400 text-right">{emailMessage.length}/1000</p>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setEmailDialogFile(null); setEmailInput(''); }}>
+            <Button variant="outline" onClick={() => { setEmailDialogFile(null); setEmailInput(''); setEmailMessage(''); }}>
               {t('common.cancel')}
             </Button>
             <Button
@@ -314,12 +423,124 @@ const FilesPage: React.FC = () => {
               disabled={!emailInput || (emailDialogFile ? sendingEmailFiles.has(emailDialogFile.id) : false)}
             >
               {emailDialogFile && sendingEmailFiles.has(emailDialogFile.id)
-                ? t('files.sendEmailSending')
-                : t('files.sendEmailSend')}
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('files.sendEmailSending')}</>
+                : <><Send className="w-4 h-4 mr-2" />{t('files.sendEmailSend')}</>}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={!!historyFile} onOpenChange={open => { if (!open) setHistoryFile(null); }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              History — {historyFile?.name}
+            </DialogTitle>
+            <DialogDescription>Email sending and download history for this document.</DialogDescription>
+          </DialogHeader>
+          {historyLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+          ) : (
+            <Tabs defaultValue="email" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> Email History
+                  {emailHistory.length > 0 && <Badge variant="secondary">{emailHistory.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="download" className="flex items-center gap-2">
+                  <Download className="w-4 h-4" /> Download History
+                  {downloadHistory.length > 0 && <Badge variant="secondary">{downloadHistory.length}</Badge>}
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="email">
+                {emailHistory.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No emails sent yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-gray-500">
+                          <th className="text-left py-2 px-3">Recipient</th>
+                          <th className="text-left py-2 px-3">Status</th>
+                          <th className="text-left py-2 px-3">Message</th>
+                          <th className="text-left py-2 px-3">Sent At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {emailHistory.map(log => (
+                          <tr key={log.id} className="border-b border-gray-100">
+                            <td className="py-2 px-3 font-medium">{log.recipient_email}</td>
+                            <td className="py-2 px-3">
+                              <Badge variant={log.status === 'sent' ? 'default' : 'destructive'}>
+                                {log.status}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3 text-gray-500 max-w-[180px] truncate" title={log.message || ''}>
+                              {log.message || <span className="italic text-gray-400">—</span>}
+                            </td>
+                            <td className="py-2 px-3 text-gray-500">{formatDate(log.sent_at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="download">
+                {downloadHistory.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No downloads recorded yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-gray-500">
+                          <th className="text-left py-2 px-3">User ID</th>
+                          <th className="text-left py-2 px-3">IP Address</th>
+                          <th className="text-left py-2 px-3">Downloaded At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {downloadHistory.map(log => (
+                          <tr key={log.id} className="border-b border-gray-100">
+                            <td className="py-2 px-3 font-mono text-xs">{log.downloaded_by_user_id}</td>
+                            <td className="py-2 px-3 text-gray-500">{log.ip_address || '—'}</td>
+                            <td className="py-2 px-3 text-gray-500">{formatDate(log.downloaded_at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <AlertDialog open={!!deleteConfirmFile} onOpenChange={open => { if (!open) setDeleteConfirmFile(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete file?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{deleteConfirmFile?.name}</strong> and remove it from storage. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

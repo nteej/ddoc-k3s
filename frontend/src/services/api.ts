@@ -21,7 +21,12 @@ import {
   CreateContextData,
   UpdateProfileData,
   TemplatesResponse,
-  GeneratedFilesResponse
+  GeneratedFilesResponse,
+  FileEmailLog,
+  FileDownloadLog,
+  Package,
+  PackageUsage,
+  PackageUpgradeRequest,
 } from '@/types';
 
 const BASE_URL = '/api';
@@ -455,17 +460,42 @@ const api = {
     };
   },
 
-  async sendFileEmail(fileId: string, email: string): Promise<void> {
+  async sendFileEmail(fileId: string, email: string, message?: string): Promise<void> {
     const response = await fetch(`${BASE_URL}/files/${fileId}/send-email`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, message: message || undefined }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || 'Failed to send email');
+    }
+  },
+
+  async getFileEmailHistory(fileId: string): Promise<FileEmailLog[]> {
+    const res = await fetch(`${BASE_URL}/files/${fileId}/email-history`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch email history');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async getFileDownloadHistory(fileId: string): Promise<FileDownloadLog[]> {
+    const res = await fetch(`${BASE_URL}/files/${fileId}/download-history`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch download history');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async deleteFile(fileId: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/files/${fileId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to delete file');
     }
   },
 
@@ -718,6 +748,100 @@ const api = {
       method: 'POST',
       credentials: 'include',
     });
+  },
+
+  async getPackages(): Promise<Package[]> {
+    const res = await fetch(`${BASE_URL}/packages`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch packages');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async getCurrentPackage(): Promise<{ package: Package; usage: PackageUsage }> {
+    const res = await fetch(`${BASE_URL}/organizations/current/package`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch current package');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async submitUpgradeRequest(packageId: string, paymentReference?: string): Promise<PackageUpgradeRequest> {
+    const res = await fetch(`${BASE_URL}/organizations/current/upgrade-request`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ package_id: packageId, payment_reference: paymentReference }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to submit upgrade request');
+    }
+    const { data } = await res.json();
+    return data.request;
+  },
+
+  async getAdminPackages(): Promise<Package[]> {
+    const res = await fetch(`${BASE_URL}/admin/packages`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch packages');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async createAdminPackage(pkg: Partial<Package>): Promise<Package> {
+    const res = await fetch(`${BASE_URL}/admin/packages`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pkg),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to create package');
+    }
+    const { data } = await res.json();
+    return data;
+  },
+
+  async updateAdminPackage(id: string, pkg: Partial<Package>): Promise<Package> {
+    const res = await fetch(`${BASE_URL}/admin/packages/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pkg),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to update package');
+    }
+    const { data } = await res.json();
+    return data;
+  },
+
+  async deleteAdminPackage(id: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/admin/packages/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to delete package');
+  },
+
+  async getUpgradeRequests(): Promise<PackageUpgradeRequest[]> {
+    const res = await fetch(`${BASE_URL}/admin/upgrade-requests`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch upgrade requests');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async processUpgradeRequest(id: string, action: 'approve' | 'reject', reason?: string): Promise<void> {
+    const res = await fetch(`${BASE_URL}/admin/upgrade-requests/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, reason }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to process request');
+    }
   },
 };
 

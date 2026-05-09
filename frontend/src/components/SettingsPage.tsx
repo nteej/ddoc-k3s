@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Plus, Tag as TagIcon, Edit, Trash2, Loader2, FolderOpen, Folder,
-  Type, Hash, Calendar, List, Mail, AlignLeft, X,
+  Type, Hash, Calendar, List, Mail, AlignLeft, X, Settings, CheckCircle2,
+  XCircle, Package,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Tag, TagType, Context, CreateTagData, CreateContextData } from '@/types';
+import { Tag, TagType, Context, CreateTagData, CreateContextData, Package as PackageType, PackageUpgradeRequest } from '@/types';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -192,6 +193,7 @@ const SettingsPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const isAdminOrOwner = user?.role === 'admin' || user?.role === 'owner';
   const tagTypes = useMemo(() => makeTagTypes(t), [t]);
   const getTypeConfig = (type: string) => tagTypes.find(tg => tg.value === type) ?? tagTypes[0];
 
@@ -371,7 +373,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="tags" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 glass-card border-gray-200">
+        <TabsList className={`grid w-full glass-card border-gray-200 ${isAdminOrOwner ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="tags" className="data-[state=active]:bg-gray-200">
             <TagIcon className="w-4 h-4 mr-2" />
             {t('settings.manageTags')}
@@ -380,6 +382,12 @@ const SettingsPage: React.FC = () => {
             <FolderOpen className="w-4 h-4 mr-2" />
             {t('settings.manageContexts')}
           </TabsTrigger>
+          {isAdminOrOwner && (
+            <TabsTrigger value="global" className="data-[state=active]:bg-gray-200">
+              <Settings className="w-4 h-4 mr-2" />
+              Global Settings
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Tags tab */}
@@ -620,7 +628,312 @@ const SettingsPage: React.FC = () => {
             </DialogContent>
           </Dialog>
         </TabsContent>
+
+        {/* Global Settings Tab (admin/owner only) */}
+        {isAdminOrOwner && (
+          <TabsContent value="global" className="space-y-8">
+            <GlobalSettingsTab />
+          </TabsContent>
+        )}
       </Tabs>
+    </div>
+  );
+};
+
+// ─── Global Settings Tab ─────────────────────────────────────────────────────
+
+const emptyPkgForm = () => ({
+  name: '', slug: '', description: '', price_monthly: 0, price_yearly: 0,
+  max_api_keys: 1, max_members: 5, max_monthly_generations: 100,
+  max_file_storage_mb: 500, features: '', is_active: true,
+});
+
+const GlobalSettingsTab: React.FC = () => {
+  const { toast } = useToast();
+  const [packages, setPackages] = useState<PackageType[]>([]);
+  const [upgradeRequests, setUpgradeRequests] = useState<PackageUpgradeRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [showPkgDialog, setShowPkgDialog] = useState(false);
+  const [editingPkg, setEditingPkg] = useState<PackageType | null>(null);
+  const [pkgForm, setPkgForm] = useState(emptyPkgForm());
+  const [pkgSaving, setPkgSaving] = useState(false);
+
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [pkgs, requests] = await Promise.all([
+        api.getAdminPackages(),
+        api.getUpgradeRequests(),
+      ]);
+      setPackages(pkgs);
+      setUpgradeRequests(requests);
+    } catch {
+      toast({ title: 'Failed to load global settings', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openCreate = () => { setEditingPkg(null); setPkgForm(emptyPkgForm()); setShowPkgDialog(true); };
+  const openEdit = (pkg: PackageType) => {
+    setEditingPkg(pkg);
+    setPkgForm({
+      name: pkg.name, slug: pkg.slug, description: pkg.description ?? '',
+      price_monthly: pkg.price_monthly, price_yearly: pkg.price_yearly,
+      max_api_keys: pkg.max_api_keys, max_members: pkg.max_members,
+      max_monthly_generations: pkg.max_monthly_generations,
+      max_file_storage_mb: pkg.max_file_storage_mb,
+      features: (pkg.features ?? []).join(', '),
+      is_active: pkg.is_active,
+    });
+    setShowPkgDialog(true);
+  };
+
+  const handleSavePkg = async () => {
+    try {
+      setPkgSaving(true);
+      const payload = {
+        ...pkgForm,
+        features: pkgForm.features ? pkgForm.features.split(',').map(s => s.trim()).filter(Boolean) : [],
+      };
+      if (editingPkg) {
+        await api.updateAdminPackage(editingPkg.id, payload);
+        toast({ title: 'Package updated' });
+      } else {
+        await api.createAdminPackage(payload);
+        toast({ title: 'Package created' });
+      }
+      setShowPkgDialog(false);
+      await load();
+    } catch (e: unknown) {
+      toast({ title: 'Save failed', description: e instanceof Error ? e.message : '', variant: 'destructive' });
+    } finally {
+      setPkgSaving(false);
+    }
+  };
+
+  const handleDeletePkg = async (id: string) => {
+    try {
+      await api.deleteAdminPackage(id);
+      toast({ title: 'Package deleted' });
+      await load();
+    } catch {
+      toast({ title: 'Failed to delete package', variant: 'destructive' });
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      await api.processUpgradeRequest(id, 'approve');
+      toast({ title: 'Upgrade request approved' });
+      await load();
+    } catch (e: unknown) {
+      toast({ title: 'Failed to approve', description: e instanceof Error ? e.message : '', variant: 'destructive' });
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectingId) return;
+    try {
+      await api.processUpgradeRequest(rejectingId, 'reject', rejectReason || undefined);
+      toast({ title: 'Upgrade request rejected' });
+      setRejectingId(null);
+      setRejectReason('');
+      await load();
+    } catch (e: unknown) {
+      toast({ title: 'Failed to reject', description: e instanceof Error ? e.message : '', variant: 'destructive' });
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-8">
+      {/* Package Management */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-2">
+              <Package className="w-5 h-5" /> Package Management
+            </h2>
+            <p className="text-gray-500 text-sm">Create and manage subscription packages.</p>
+          </div>
+          <Button onClick={openCreate} className="gap-2 bg-blue-900 hover:bg-blue-800 text-white">
+            <Plus className="w-4 h-4" /> New Package
+          </Button>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Name</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Slug</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Price/mo</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">API Keys</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Members</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Generations</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Active</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {packages.map(pkg => (
+                <tr key={pkg.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-4 font-medium">{pkg.name}</td>
+                  <td className="py-3 px-4 text-gray-500 font-mono text-xs">{pkg.slug}</td>
+                  <td className="py-3 px-4">{pkg.price_monthly === 0 ? 'Free' : `€${pkg.price_monthly}`}</td>
+                  <td className="py-3 px-4">{pkg.max_api_keys === -1 ? '∞' : pkg.max_api_keys}</td>
+                  <td className="py-3 px-4">{pkg.max_members === -1 ? '∞' : pkg.max_members}</td>
+                  <td className="py-3 px-4">{pkg.max_monthly_generations === -1 ? '∞' : pkg.max_monthly_generations}</td>
+                  <td className="py-3 px-4">
+                    <Badge variant={pkg.is_active ? 'default' : 'secondary'}>
+                      {pkg.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-4 text-right space-x-1">
+                    <Button variant="ghost" size="sm" onClick={() => openEdit(pkg)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeletePkg(pkg.id)}
+                      className="text-red-500 hover:text-red-700">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {packages.length === 0 && (
+                <tr><td colSpan={8} className="py-8 text-center text-gray-500">No packages yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Upgrade Requests */}
+      <div>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-700">Upgrade Requests</h2>
+          <p className="text-gray-500 text-sm">Review and approve or reject plan upgrade requests.</p>
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Organization</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Current Plan</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Requested Plan</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Status</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600">Submitted</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upgradeRequests.map(req => (
+                <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="py-3 px-4 font-medium">{req.organization_name ?? req.organization_id}</td>
+                  <td className="py-3 px-4 capitalize text-gray-500">{req.current_package_slug}</td>
+                  <td className="py-3 px-4 font-medium">{req.requested_package_name ?? req.requested_package_slug}</td>
+                  <td className="py-3 px-4">
+                    <Badge variant={req.status === 'approved' ? 'default' : req.status === 'rejected' ? 'destructive' : 'secondary'}>
+                      {req.status}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-4 text-gray-500">{new Date(req.created_at).toLocaleDateString()}</td>
+                  <td className="py-3 px-4 text-right space-x-1">
+                    {req.status === 'pending' && (
+                      <>
+                        <Button size="sm" onClick={() => handleApprove(req.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setRejectingId(req.id); setRejectReason(''); }}
+                          className="text-red-500 border-red-300 hover:bg-red-50 gap-1">
+                          <XCircle className="w-3.5 h-3.5" /> Reject
+                        </Button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {upgradeRequests.length === 0 && (
+                <tr><td colSpan={6} className="py-8 text-center text-gray-500">No upgrade requests.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Package Create/Edit Dialog */}
+      <Dialog open={showPkgDialog} onOpenChange={open => { if (!open) setShowPkgDialog(false); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingPkg ? 'Edit Package' : 'New Package'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
+            {(['name', 'slug', 'description'] as const).map(field => (
+              <div key={field} className="space-y-1">
+                <Label className="capitalize">{field}</Label>
+                <Input value={(pkgForm as Record<string, string | number | boolean>)[field] as string}
+                  onChange={e => setPkgForm(p => ({ ...p, [field]: e.target.value }))}
+                  placeholder={field} />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-3">
+              {(['price_monthly', 'price_yearly', 'max_api_keys', 'max_members', 'max_monthly_generations', 'max_file_storage_mb'] as const).map(field => (
+                <div key={field} className="space-y-1">
+                  <Label className="text-xs capitalize">{field.replace(/_/g, ' ')}</Label>
+                  <Input type="number" value={(pkgForm as Record<string, number>)[field] as number}
+                    onChange={e => setPkgForm(p => ({ ...p, [field]: Number(e.target.value) }))} />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-1">
+              <Label>Features (comma-separated)</Label>
+              <Input value={pkgForm.features}
+                onChange={e => setPkgForm(p => ({ ...p, features: e.target.value }))}
+                placeholder="Feature 1, Feature 2, Feature 3" />
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="pkg-active" checked={pkgForm.is_active}
+                onChange={e => setPkgForm(p => ({ ...p, is_active: e.target.checked }))} />
+              <Label htmlFor="pkg-active">Active</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPkgDialog(false)}>Cancel</Button>
+            <Button onClick={handleSavePkg} disabled={pkgSaving || !pkgForm.name || !pkgForm.slug}
+              className="bg-blue-900 hover:bg-blue-800 text-white">
+              {pkgSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : 'Save Package'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Reason Dialog */}
+      <Dialog open={!!rejectingId} onOpenChange={open => { if (!open) setRejectingId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Upgrade Request</DialogTitle>
+            <DialogDescription>Optionally provide a reason for the rejection.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Input placeholder="Rejection reason (optional)" value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectingId(null)}>Cancel</Button>
+            <Button onClick={handleReject} className="bg-red-600 hover:bg-red-700 text-white">Confirm Reject</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

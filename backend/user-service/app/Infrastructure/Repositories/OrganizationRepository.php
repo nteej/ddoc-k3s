@@ -145,12 +145,14 @@ class OrganizationRepository
     private function mapOrg(object $row): Organization
     {
         return Organization::restore(
-            id:         $row->id,
-            name:       $row->name,
-            slug:       $row->slug,
-            plan:       $row->plan,
-            ownerId:    $row->owner_id,
-            maxMembers: (int) $row->max_members,
+            id:                     $row->id,
+            name:                   $row->name,
+            slug:                   $row->slug,
+            plan:                   $row->plan,
+            ownerId:                $row->owner_id,
+            maxMembers:             (int) $row->max_members,
+            packageId:              $row->package_id ?? null,
+            monthlyGenerationCount: (int) ($row->monthly_generation_count ?? 0),
         );
     }
 
