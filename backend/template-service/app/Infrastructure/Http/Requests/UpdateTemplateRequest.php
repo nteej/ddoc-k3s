@@ -6,24 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateTemplateRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'name' => [
-                'sometimes',
-                'string',
-                'max:255',
-            ],
-            'description' => [
-                'sometimes',
-                'string',
-                'max:255',
-            ],
+            'name'             => ['sometimes', 'string', 'max:255'],
+            'description'      => ['sometimes', 'string', 'max:255'],
+            'paperFormat'      => ['sometimes', 'string', 'in:A4,A3,A5,Letter,Legal'],
+            'paperOrientation' => ['sometimes', 'string', 'in:portrait,landscape'],
         ];
     }
 }

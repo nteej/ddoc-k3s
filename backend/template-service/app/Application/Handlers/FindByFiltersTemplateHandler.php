@@ -24,10 +24,12 @@ final readonly class FindByFiltersTemplateHandler
 
         foreach ($templateData as $template) {
             $outputDTO[] = Template::restore(
-                id: $template->id,
-                name: $template->name,
-                description: $template->description,
-                companyId: $template->company_id
+                id:               $template->id,
+                name:             $template->name,
+                description:      $template->description,
+                companyId:        $template->company_id,
+                paperFormat:      $template->paper_format ?? 'A4',
+                paperOrientation: $template->paper_orientation ?? 'portrait',
             );
         }
 

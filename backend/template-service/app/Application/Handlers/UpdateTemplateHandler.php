@@ -30,8 +30,10 @@ final readonly class UpdateTemplateHandler
     private function updateTemplate(UpdateTemplateInputDTO $input, Template $template): bool
     {
         $updatedTemplate = $template->update(
-            name: $input->name ?? $template->name,
-            description: $input->description ?? $template->description
+            name:             $input->name,
+            description:      $input->description,
+            paperFormat:      $input->paperFormat,
+            paperOrientation: $input->paperOrientation,
         );
 
         return $this->templateRepository->update($updatedTemplate);

@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
@@ -52,7 +53,9 @@ const DocumentsPage: React.FC = () => {
   // Form states
   const [newTemplateData, setNewTemplateData] = useState<CreateTemplateData>({
     name: '',
-    description: ''
+    description: '',
+    paperFormat: 'A4',
+    paperOrientation: 'portrait',
   });
   const [newSectionData, setNewSectionData] = useState<CreateSectionData>({
     name: '',
@@ -185,7 +188,7 @@ const DocumentsPage: React.FC = () => {
     try {
       await api.createTemplate(newTemplateData);
       await loadTemplates();
-      setNewTemplateData({ name: '', description: '' });
+      setNewTemplateData({ name: '', description: '', paperFormat: 'A4', paperOrientation: 'portrait' });
       setShowNewTemplateModal(false);
       toast({
         title: t('documents.templateCreated'),
@@ -204,7 +207,9 @@ const DocumentsPage: React.FC = () => {
     setEditingTemplate(template);
     setNewTemplateData({
       name: template.name,
-      description: template.description
+      description: template.description,
+      paperFormat: template.paperFormat || 'A4',
+      paperOrientation: template.paperOrientation || 'portrait',
     });
     setShowEditTemplateModal(true);
   };
@@ -399,28 +404,32 @@ const DocumentsPage: React.FC = () => {
                     id="template-description"
                     placeholder={t('documents.descriptionPlaceholder')}
                     value={newTemplateData.description}
-                    onChange={(e) => setNewTemplateData(prev => ({
-                      ...prev,
-                      description: e.target.value
-                    }))}
+                    onChange={(e) => setNewTemplateData(prev => ({ ...prev, description: e.target.value }))}
                     className="glass bg-gray-50 border-gray-200"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>{t('documents.paperFormat')}</Label>
+                    <Select value={newTemplateData.paperFormat || 'A4'} onValueChange={v => setNewTemplateData(prev => ({ ...prev, paperFormat: v }))}>
+                      <SelectTrigger className="glass bg-gray-50 border-gray-200"><SelectValue /></SelectTrigger>
+                      <SelectContent>{['A4','A3','A5','Letter','Legal'].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{t('documents.paperOrientation')}</Label>
+                    <Select value={newTemplateData.paperOrientation || 'portrait'} onValueChange={v => setNewTemplateData(prev => ({ ...prev, paperOrientation: v }))}>
+                      <SelectTrigger className="glass bg-gray-50 border-gray-200"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="portrait">{t('documents.portrait')}</SelectItem>
+                        <SelectItem value="landscape">{t('documents.landscape')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowNewTemplateModal(false)}
-                    className="border-gray-200"
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                  <Button
-                    onClick={handleCreateTemplate}
-                    disabled={!newTemplateData.name.trim()}
-                    className="bg-blue-900"
-                  >
-                    {t('documents.createTemplate')}
-                  </Button>
+                  <Button variant="outline" onClick={() => setShowNewTemplateModal(false)} className="border-gray-200">{t('common.cancel')}</Button>
+                  <Button onClick={handleCreateTemplate} disabled={!newTemplateData.name.trim()} className="bg-blue-900">{t('documents.createTemplate')}</Button>
                 </div>
               </div>
             </DialogContent>
@@ -752,6 +761,25 @@ const DocumentsPage: React.FC = () => {
                   }))}
                   className="glass bg-gray-50 border-gray-200"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>{t('documents.paperFormat')}</Label>
+                  <Select value={newTemplateData.paperFormat || 'A4'} onValueChange={v => setNewTemplateData(prev => ({ ...prev, paperFormat: v }))}>
+                    <SelectTrigger className="glass bg-gray-50 border-gray-200"><SelectValue /></SelectTrigger>
+                    <SelectContent>{['A4','A3','A5','Letter','Legal'].map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t('documents.paperOrientation')}</Label>
+                  <Select value={newTemplateData.paperOrientation || 'portrait'} onValueChange={v => setNewTemplateData(prev => ({ ...prev, paperOrientation: v }))}>
+                    <SelectTrigger className="glass bg-gray-50 border-gray-200"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="portrait">{t('documents.portrait')}</SelectItem>
+                      <SelectItem value="landscape">{t('documents.landscape')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button

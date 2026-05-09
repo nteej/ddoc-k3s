@@ -49,7 +49,12 @@ final readonly class FileGenerationHandler
 
                     $htmlContent = FileTagsReplacementService::replace($input->sections, $payloadArray);
 
-                    $uniqidFileName = $this->fileGeneration->generate($input->template->name, $htmlContent);
+                    $uniqidFileName = $this->fileGeneration->generate(
+                        $input->template->name,
+                        $htmlContent,
+                        $input->template->paperFormat ?? 'A4',
+                        $input->template->paperOrientation ?? 'portrait',
+                    );
 
                     $path = $this->fileStorage->upload($uniqidFileName);
 

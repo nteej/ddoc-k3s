@@ -48,14 +48,15 @@ final readonly class FindByFiltersFileHandler
         $template = $template['data'][0];
 
         return new FindByFiltersFileOutputDTO(
-            id: $file->id,
-            templateId: $file->templateId,
-            userId: app(LoggedUserHelper::class)->userId(),
-            createdAt: Carbon::parse($file->createdAt)->format('Y-m-d h:i:s'),
-            templateName: $template['name'],
-            status: $file->status->value,
+            id:              $file->id,
+            name:            $file->name,
+            templateId:      $file->templateId,
+            userId:          app(LoggedUserHelper::class)->userId(),
+            createdAt:       Carbon::parse($file->createdAt)->format('Y-m-d h:i:s'),
+            templateName:    $template['name'],
+            status:          $file->status->value,
             readyToDownload: $file->readyToDownload,
-            errors: $file->errors,
+            errors:          $file->errors,
         );
     }
 }

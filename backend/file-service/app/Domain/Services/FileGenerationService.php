@@ -18,7 +18,7 @@ class FileGenerationService
         $this->pdf = new Dompdf($options);
     }
 
-    public function generate(string $fileName, string $htmlContent): string
+    public function generate(string $fileName, string $htmlContent, string $paperFormat = 'A4', string $paperOrientation = 'portrait'): string
     {
         $uniqidFileName = $fileName . '_' . uniqid() . '.pdf';
         $tmpDir = storage_path('app/public/tmp');
@@ -31,7 +31,7 @@ class FileGenerationService
         $htmlContent = mb_convert_encoding($htmlContent, 'HTML-ENTITIES', 'UTF-8');
 
         $this->pdf->loadHtml($htmlContent);
-        $this->pdf->setPaper('A4', 'portrait');
+        $this->pdf->setPaper($paperFormat, $paperOrientation);
         $this->pdf->render();
 
         file_put_contents($outputPath, $this->pdf->output());

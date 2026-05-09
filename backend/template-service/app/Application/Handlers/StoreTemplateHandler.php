@@ -39,9 +39,11 @@ final readonly class StoreTemplateHandler
     private function insertTemplate(StoreTemplateInputDTO $input): string
     {
         return $this->templateRepository->insert(Template::create(
-            name: $input->name,
-            description: $input->description,
-            companyId: $input->companyId,
+            name:             $input->name,
+            description:      $input->description,
+            companyId:        $input->companyId,
+            paperFormat:      $input->paperFormat ?? 'A4',
+            paperOrientation: $input->paperOrientation ?? 'portrait',
         ));
     }
 }

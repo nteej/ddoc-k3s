@@ -6,24 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreTemplateRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-            'description' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+            'name'             => ['required', 'string', 'max:255'],
+            'description'      => ['required', 'string', 'max:255'],
+            'paperFormat'      => ['sometimes', 'string', 'in:A4,A3,A5,Letter,Legal'],
+            'paperOrientation' => ['sometimes', 'string', 'in:portrait,landscape'],
         ];
     }
 }

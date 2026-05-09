@@ -33,9 +33,11 @@ class TemplateController extends BaseController
     public function store(StoreTemplateRequest $request, StoreTemplateHandler $handler): JsonResponse
     {
         $output = $handler->execute(new StoreTemplateInputDTO(
-            name: $request->validated('name'),
-            description: $request->validated('description'),
-            companyId: app(LoggedUserHelper::class)->companyId()
+            name:             $request->validated('name'),
+            description:      $request->validated('description'),
+            companyId:        app(LoggedUserHelper::class)->companyId(),
+            paperFormat:      $request->validated('paperFormat', 'A4'),
+            paperOrientation: $request->validated('paperOrientation', 'portrait'),
         ));
 
         return $this->successResponse($output, Response::HTTP_CREATED);
@@ -46,8 +48,10 @@ class TemplateController extends BaseController
         $output = $handler->execute(
             $id,
             new UpdateTemplateInputDTO(
-                name: $request->validated('name'),
-                description: $request->validated('description'),
+                name:             $request->validated('name'),
+                description:      $request->validated('description'),
+                paperFormat:      $request->validated('paperFormat'),
+                paperOrientation: $request->validated('paperOrientation'),
             ));
 
         return $this->successResponse($output);

@@ -12,144 +12,88 @@ use Illuminate\Support\Facades\DB;
 
 class TemplateRepository implements TemplateRepositoryInterface
 {
+    private const COLUMNS = ['id', 'name', 'description', 'company_id', 'paper_format', 'paper_orientation'];
+
     public function exists(array $filters): bool
     {
         return DB::table('templates')
-            ->select([
-                'id',
-                'name',
-                'description',
-                'company_id',
-            ])
-            ->when(! empty($filters['id']), function (Builder $query) use ($filters) {
-                $query->where('id', '=', $filters['id']);
-            })
-            ->when(! empty($filters['name']), function (Builder $query) use ($filters) {
-                $query->where('name', '=', $filters['name']);
-            })
-            ->when(! empty($filters['description']), function (Builder $query) use ($filters) {
-                $query->where('description', '=', $filters['description']);
-            })
-            ->when(! empty($filters['companyId']), function (Builder $query) use ($filters) {
-                $query->where('company_id', '=', $filters['companyId']);
-            })
+            ->select(self::COLUMNS)
+            ->when(! empty($filters['id']),          fn(Builder $q) => $q->where('id', $filters['id']))
+            ->when(! empty($filters['name']),        fn(Builder $q) => $q->where('name', $filters['name']))
+            ->when(! empty($filters['description']), fn(Builder $q) => $q->where('description', $filters['description']))
+            ->when(! empty($filters['companyId']),   fn(Builder $q) => $q->where('company_id', $filters['companyId']))
             ->exists();
     }
 
     public function findAllUsingFilters(array $filters = []): Collection
     {
-        $query = DB::table('templates')
-            ->select([
-                'id',
-                'name',
-                'description',
-                'company_id',
-            ])
-            ->when(! empty($filters['id']), function (Builder $query) use ($filters) {
-                $query->where('id', '=', $filters['id']);
-            })
-            ->when(! empty($filters['name']), function (Builder $query) use ($filters) {
-                $query->where('name', '=', $filters['name']);
-            })
-            ->when(! empty($filters['description']), function (Builder $query) use ($filters) {
-                $query->where('description', '=', $filters['description']);
-            })
-            ->when(! empty($filters['companyId']), function (Builder $query) use ($filters) {
-                $query->where('company_id', '=', $filters['companyId']);
-            })
+        return DB::table('templates')
+            ->select(self::COLUMNS)
+            ->when(! empty($filters['id']),          fn(Builder $q) => $q->where('id', $filters['id']))
+            ->when(! empty($filters['name']),        fn(Builder $q) => $q->where('name', $filters['name']))
+            ->when(! empty($filters['description']), fn(Builder $q) => $q->where('description', $filters['description']))
+            ->when(! empty($filters['companyId']),   fn(Builder $q) => $q->where('company_id', $filters['companyId']))
             ->get();
-
-        return $query;
     }
 
     public function findFirstUsingFilters(array $filters = []): ?Template
     {
-        $template = DB::table('templates')
-            ->select([
-                'id',
-                'name',
-                'description',
-                'company_id',
-            ])
-            ->when(! empty($filters['id']), function (Builder $query) use ($filters) {
-                $query->where('id', '=', $filters['id']);
-            })
-            ->when(! empty($filters['name']), function (Builder $query) use ($filters) {
-                $query->where('name', '=', $filters['name']);
-            })
-            ->when(! empty($filters['description']), function (Builder $query) use ($filters) {
-                $query->where('description', '=', $filters['description']);
-            })
-            ->when(! empty($filters['companyId']), function (Builder $query) use ($filters) {
-                $query->where('company_id', '=', $filters['companyId']);
-            })
+        $row = DB::table('templates')
+            ->select(self::COLUMNS)
+            ->when(! empty($filters['id']),          fn(Builder $q) => $q->where('id', $filters['id']))
+            ->when(! empty($filters['name']),        fn(Builder $q) => $q->where('name', $filters['name']))
+            ->when(! empty($filters['description']), fn(Builder $q) => $q->where('description', $filters['description']))
+            ->when(! empty($filters['companyId']),   fn(Builder $q) => $q->where('company_id', $filters['companyId']))
             ->first();
 
-        if (! $template) {
-            return null;
-        }
-
-        return Template::restore(
-            id: $template->id,
-            name: $template->name,
-            description: $template->description,
-            companyId: $template->company_id
-        );
+        return $row ? $this->mapRow($row) : null;
     }
 
     public function findOneById(string $id): ?Template
     {
-        $template = DB::table('templates')
-            ->select([
-                'id',
-                'name',
-                'description',
-                'company_id',
-            ])
-            ->where('id', '=', $id)
-            ->first();
-
-        if (! $template) {
-            return null;
-        }
-
-        return Template::restore(
-            id: $template->id,
-            name: $template->name,
-            description: $template->description,
-            companyId: $template->company_id
-        );
+        $row = DB::table('templates')->select(self::COLUMNS)->where('id', $id)->first();
+        return $row ? $this->mapRow($row) : null;
     }
 
     public function insert(Template $template): string
     {
-        DB::table("templates")
-            ->insert([
-                'id' => $template->id,
-                'name' => $template->name,
-                'description' => $template->description,
-                'company_id' => $template->companyId
-            ]);
+        DB::table('templates')->insert([
+            'id'                => $template->id,
+            'name'              => $template->name,
+            'description'       => $template->description,
+            'company_id'        => $template->companyId,
+            'paper_format'      => $template->paperFormat,
+            'paper_orientation' => $template->paperOrientation,
+        ]);
 
         return $template->id;
     }
 
     public function update(Template $template): bool
     {
-        $template = DB::table('templates')
-            ->where('id', '=', $template->id)
-            ->update([
-                'name' => $template->name, 
-                'description' => $template->description, 
-                'company_id' => $template->companyId
-
-            ]);
-
-        return (bool) $template;
+        return (bool) DB::table('templates')->where('id', $template->id)->update([
+            'name'              => $template->name,
+            'description'       => $template->description,
+            'company_id'        => $template->companyId,
+            'paper_format'      => $template->paperFormat,
+            'paper_orientation' => $template->paperOrientation,
+        ]);
     }
 
     public function delete(string $id): bool
     {
         return (bool) DB::table('templates')->where('id', $id)->delete();
+    }
+
+    private function mapRow(object $row): Template
+    {
+        return Template::restore(
+            id:               $row->id,
+            name:             $row->name,
+            description:      $row->description,
+            companyId:        $row->company_id,
+            paperFormat:      $row->paper_format ?? 'A4',
+            paperOrientation: $row->paper_orientation ?? 'portrait',
+        );
     }
 }

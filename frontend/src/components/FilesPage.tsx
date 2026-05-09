@@ -34,11 +34,17 @@ const FilesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stopPolling = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
+  const startPolling = (fast: boolean) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const refreshed = await api.getGeneratedFiles(currentPage, 10);
+        setFilesData(refreshed);
+        const hasProcessing = refreshed.files.some(f => f.status === 1);
+        if (!hasProcessing && fast) startPolling(false);
+        if (hasProcessing && !fast) startPolling(true);
+      } catch { /* silent */ }
+    }, fast ? 3000 : 10000);
   };
 
   const loadFiles = useCallback(async (silent = false) => {
@@ -47,19 +53,7 @@ const FilesPage: React.FC = () => {
       if (!silent) setLoading(true);
       const response = await api.getGeneratedFiles(currentPage, 10);
       setFilesData(response);
-
-      const hasProcessing = response.files.some(f => f.status === 1);
-      if (hasProcessing && !pollRef.current) {
-        pollRef.current = setInterval(async () => {
-          try {
-            const refreshed = await api.getGeneratedFiles(currentPage, 10);
-            setFilesData(refreshed);
-            if (!refreshed.files.some(f => f.status === 1)) stopPolling();
-          } catch { /* silent */ }
-        }, 4000);
-      } else if (!hasProcessing) {
-        stopPolling();
-      }
+      startPolling(response.files.some(f => f.status === 1));
     } catch {
       toast({
         title: t('files.errorLoadingFiles'),
@@ -73,7 +67,7 @@ const FilesPage: React.FC = () => {
 
   useEffect(() => {
     loadFiles();
-    return () => stopPolling();
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [loadFiles]);
 
   const handleDownload = async (fileId: string, fileName: string) => {
@@ -209,8 +203,8 @@ const FilesPage: React.FC = () => {
                             <FileText className="w-4 h-4 text-white" />
                           </div>
                           <div>
-                            <p className="font-medium text-sm">{file.templateName || '—'}</p>
-                            <p className="text-xs text-gray-500 font-mono">{file.id.slice(0, 8)}…</p>
+                            <p className="font-medium text-sm">{file.name || '—'}</p>
+                            <p className="text-xs text-gray-500">{file.templateName}</p>
                           </div>
                         </div>
                       </td>
@@ -225,7 +219,7 @@ const FilesPage: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownload(file.id, file.templateName || file.id)}
+                          onClick={() => handleDownload(file.id, file.name || file.id)}
                           disabled={!file.readyToDownload || downloadingFiles.has(file.id)}
                           className="hover:bg-green-500/20 disabled:opacity-30"
                           title={!file.readyToDownload ? t('files.fileNotReady') : t('files.downloadPdf')}

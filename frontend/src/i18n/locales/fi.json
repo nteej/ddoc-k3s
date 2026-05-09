@@ -162,7 +162,11 @@
     "downloadStarted": "Lataus aloitettu!",
     "downloadStartedDesc": "Mallipohjan lataus käynnistyy.",
     "errorDownload": "Latausvirhe",
-    "errorDownloadDesc": "Mallipohjaa ei voitu ladata."
+    "errorDownloadDesc": "Mallipohjaa ei voitu ladata.",
+    "paperFormat": "Paperikoko",
+    "paperOrientation": "Suunta",
+    "portrait": "Pysty",
+    "landscape": "Vaaka"
   },
   "files": {
     "title": "Luodut tiedostot",

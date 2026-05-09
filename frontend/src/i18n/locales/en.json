@@ -162,7 +162,11 @@
     "downloadStarted": "Download started!",
     "downloadStartedDesc": "The template download will be processed.",
     "errorDownload": "Error downloading",
-    "errorDownloadDesc": "The template could not be downloaded."
+    "errorDownloadDesc": "The template could not be downloaded.",
+    "paperFormat": "Paper Format",
+    "paperOrientation": "Orientation",
+    "portrait": "Portrait",
+    "landscape": "Landscape"
   },
   "files": {
     "title": "Generated Files",

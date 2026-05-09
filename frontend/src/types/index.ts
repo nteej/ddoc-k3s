@@ -74,6 +74,8 @@ export interface Template {
   id: string;
   name: string;
   description: string;
+  paperFormat: string;
+  paperOrientation: string;
   sections: Section[];
 }
 
@@ -122,6 +124,8 @@ export interface RegisterCredentials {
 export interface CreateTemplateData {
   name: string;
   description: string;
+  paperFormat?: string;
+  paperOrientation?: string;
 }
 
 export interface CreateSectionData {
@@ -161,6 +165,7 @@ export interface TemplatesResponse {
 
 export interface GeneratedFile {
   id: string;
+  name: string;
   templateId: string;
   userId: string;
   createdAt: string;

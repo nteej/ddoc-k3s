@@ -9,7 +9,9 @@ final class UpdateTemplateInputDTO extends BaseDTO
 {
     public function __construct(
         public readonly ?string $name,
-        public readonly ?string $description
+        public readonly ?string $description,
+        public readonly ?string $paperFormat = null,
+        public readonly ?string $paperOrientation = null,
     ) {
     }
 }

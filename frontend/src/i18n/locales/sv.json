@@ -162,7 +162,11 @@
     "downloadStarted": "Nedladdning startad!",
     "downloadStartedDesc": "Mallnedladdningen bearbetas.",
     "errorDownload": "Nedladdningsfel",
-    "errorDownloadDesc": "Mallen kunde inte laddas ner."
+    "errorDownloadDesc": "Mallen kunde inte laddas ner.",
+    "paperFormat": "Pappersformat",
+    "paperOrientation": "Orientering",
+    "portrait": "Stående",
+    "landscape": "Liggande"
   },
   "files": {
     "title": "Genererade filer",
