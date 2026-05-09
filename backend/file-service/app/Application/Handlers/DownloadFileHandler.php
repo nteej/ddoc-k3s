@@ -30,23 +30,11 @@ final readonly class DownloadFileHandler
 
         $disk = $file->storageDisk;
 
-        // For S3-compatible disks return a presigned URL so PHP doesn't proxy the bytes
-        $presignedUrl = $this->fileStorageService->temporaryUrl($file->path, $disk);
-        if ($presignedUrl) {
-            return (object)[
-                'name'         => $file->name,
-                'content'      => null,
-                'presigned_url' => $presignedUrl,
-            ];
-        }
-
-        // Local disk — stream content directly
         $content = $this->fileStorageService->download($file->path, $disk);
 
         return (object)[
-            'name'         => $file->name,
-            'content'      => $content,
-            'presigned_url' => null,
+            'name'    => $file->name,
+            'content' => $content,
         ];
     }
 }

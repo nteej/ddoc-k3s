@@ -13,7 +13,6 @@ use App\Infrastructure\Http\Requests\FindByFiltersFileRequest;
 use App\Infrastructure\Http\Requests\SendEmailFileRequest;
 use App\Infrastructure\Http\Requests\StoreFileRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
 
 class FileController extends BaseController
 {
@@ -43,12 +42,6 @@ class FileController extends BaseController
     {
         $file = $handler->execute($id);
 
-        // S3 / LocalStack: redirect to a time-limited presigned URL
-        if ($file->presigned_url) {
-            return redirect($file->presigned_url);
-        }
-
-        // Local disk: stream bytes directly
         return response($file->content, 200, [
             'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $file->name . '.pdf"',
