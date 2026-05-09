@@ -42,4 +42,14 @@ spec:
               value: production
             - name: KAFKA_BROKERS
               value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092"
+            - name: REDIS_HOST
+              value: redis-svc
+            - name: REDIS_PORT
+              value: "6379"
+            - name: QUEUE_CONNECTION
+              value: redis
+            - name: REDIS_QUEUE
+              value: template-default
+            - name: CACHE_STORE
+              value: array
           restartPolicy: Always

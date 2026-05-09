@@ -187,7 +187,17 @@
     "errorLoadingFiles": "Error loading files",
     "errorLoadingFilesDesc": "Could not load generated files.",
     "downloadFailed": "Download failed",
-    "downloadFailedDesc": "The file could not be downloaded."
+    "downloadFailedDesc": "The file could not be downloaded.",
+    "sendEmail": "Send via Email",
+    "sendEmailDialogTitle": "Send PDF via Email",
+    "sendEmailDialogDesc": "Enter the recipient's email address to send the PDF as an attachment.",
+    "sendEmailPlaceholder": "recipient@example.com",
+    "sendEmailSend": "Send",
+    "sendEmailSending": "Sending...",
+    "sendEmailSuccess": "Email sent",
+    "sendEmailSuccessDesc": "The PDF was sent successfully.",
+    "sendEmailFailed": "Email failed",
+    "sendEmailFailedDesc": "The email could not be sent."
   },
   "generate": {
     "title": "Generate Document",

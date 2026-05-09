@@ -15,8 +15,8 @@ const LoginPage: React.FC = () => {
   const { login, isAuthenticated, isLoading } = useAuth();
   const { t } = useTranslation();
   const [formData, setFormData] = useState({
-    email: 'admin@example.com',
-    password: 'password',
+    email: '',
+    password: '',
     rememberMe: false,
   });
   const [showPassword, setShowPassword] = useState(false);

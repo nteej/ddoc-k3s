@@ -187,7 +187,17 @@
     "errorLoadingFiles": "Virhe tiedostojen lataamisessa",
     "errorLoadingFilesDesc": "Luotuja tiedostoja ei voitu ladata.",
     "downloadFailed": "Lataus epäonnistui",
-    "downloadFailedDesc": "Tiedostoa ei voitu ladata."
+    "downloadFailedDesc": "Tiedostoa ei voitu ladata.",
+    "sendEmail": "Lähetä sähköpostilla",
+    "sendEmailDialogTitle": "Lähetä PDF sähköpostilla",
+    "sendEmailDialogDesc": "Kirjoita vastaanottajan sähköpostiosoite lähettääksesi PDF liitteenä.",
+    "sendEmailPlaceholder": "vastaanottaja@esimerkki.fi",
+    "sendEmailSend": "Lähetä",
+    "sendEmailSending": "Lähetetään...",
+    "sendEmailSuccess": "Sähköposti lähetetty",
+    "sendEmailSuccessDesc": "PDF lähetettiin onnistuneesti.",
+    "sendEmailFailed": "Lähetys epäonnistui",
+    "sendEmailFailedDesc": "Sähköpostia ei voitu lähettää."
   },
   "generate": {
     "title": "Luo asiakirja",

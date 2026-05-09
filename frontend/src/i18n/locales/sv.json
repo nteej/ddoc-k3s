@@ -187,7 +187,17 @@
     "errorLoadingFiles": "Fel vid inläsning av filer",
     "errorLoadingFilesDesc": "Det gick inte att läsa in genererade filer.",
     "downloadFailed": "Nedladdning misslyckades",
-    "downloadFailedDesc": "Filen kunde inte laddas ner."
+    "downloadFailedDesc": "Filen kunde inte laddas ner.",
+    "sendEmail": "Skicka via e-post",
+    "sendEmailDialogTitle": "Skicka PDF via e-post",
+    "sendEmailDialogDesc": "Ange mottagarens e-postadress för att skicka PDF:en som bilaga.",
+    "sendEmailPlaceholder": "mottagare@exempel.se",
+    "sendEmailSend": "Skicka",
+    "sendEmailSending": "Skickar...",
+    "sendEmailSuccess": "E-post skickad",
+    "sendEmailSuccessDesc": "PDF:en skickades framgångsrikt.",
+    "sendEmailFailed": "E-post misslyckades",
+    "sendEmailFailedDesc": "E-posten kunde inte skickas."
   },
   "generate": {
     "title": "Generera dokument",

@@ -113,7 +113,7 @@ class FileRepository implements FileRepositoryInterface
             ->when(!empty($filters['path']),            fn(Builder $q) => $q->where('path', $filters['path']))
             ->when(isset($filters['readyToDownload']),  fn(Builder $q) => $q->where('ready_to_download', (bool) $filters['readyToDownload']))
             ->when(!empty($filters['status']),          fn(Builder $q) => $q->where('status', $filters['status']))
-            ->when(isset($filters['errors']) && $filters['errors'] === null,
+            ->when(array_key_exists('errors', $filters) && $filters['errors'] === null,
                                                         fn(Builder $q) => $q->whereNull('errors'));
     }
 

@@ -59,6 +59,8 @@ spec:
               value: "6379"
             - name: QUEUE_CONNECTION
               value: redis
+            - name: REDIS_QUEUE
+              value: template-default
             - name: KAFKA_BROKERS
               value: "kafka-0.kafka-headless.dynadoc.svc.cluster.local:9092"
             - name: AWS_ACCESS_KEY_ID

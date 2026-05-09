@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, FileText, Calendar, Loader2, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { Download, FileText, Calendar, Loader2, RefreshCw, AlertCircle, CheckCircle, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { GeneratedFile, GeneratedFilesResponse } from '@/types';
 import api from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +28,9 @@ const FilesPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+  const [sendingEmailFiles, setSendingEmailFiles] = useState<Set<string>>(new Set());
+  const [emailDialogFile, setEmailDialogFile] = useState<GeneratedFile | null>(null);
+  const [emailInput, setEmailInput] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -86,6 +92,22 @@ const FilesPage: React.FC = () => {
         next.delete(fileId);
         return next;
       });
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailDialogFile || !emailInput) return;
+    const fileId = emailDialogFile.id;
+    try {
+      setSendingEmailFiles(prev => new Set(prev).add(fileId));
+      await api.sendFileEmail(fileId, emailInput);
+      setEmailDialogFile(null);
+      setEmailInput('');
+      toast({ title: t('files.sendEmailSuccess'), description: t('files.sendEmailSuccessDesc') });
+    } catch {
+      toast({ title: t('files.sendEmailFailed'), description: t('files.sendEmailFailedDesc'), variant: 'destructive' });
+    } finally {
+      setSendingEmailFiles(prev => { const next = new Set(prev); next.delete(fileId); return next; });
     }
   };
 
@@ -175,6 +197,7 @@ const FilesPage: React.FC = () => {
                     <th className="text-left py-3 px-4 font-semibold">{t('files.colStatus')}</th>
                     <th className="text-left py-3 px-4 font-semibold">{t('files.colGeneratedAt')}</th>
                     <th className="text-right py-3 px-4 font-semibold">{t('files.colDownload')}</th>
+                    <th className="text-right py-3 px-4 font-semibold">{t('files.sendEmail')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,6 +234,22 @@ const FilesPage: React.FC = () => {
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Download className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </td>
+                      <td className="py-4 px-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setEmailDialogFile(file); setEmailInput(''); }}
+                          disabled={!file.readyToDownload || sendingEmailFiles.has(file.id)}
+                          className="hover:bg-blue-500/20 disabled:opacity-30"
+                          title={!file.readyToDownload ? t('files.fileNotReady') : t('files.sendEmail')}
+                        >
+                          {sendingEmailFiles.has(file.id) ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Mail className="w-4 h-4" />
                           )}
                         </Button>
                       </td>
@@ -254,6 +293,39 @@ const FilesPage: React.FC = () => {
           </Pagination>
         </div>
       )}
+
+      <Dialog open={!!emailDialogFile} onOpenChange={open => { if (!open) { setEmailDialogFile(null); setEmailInput(''); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('files.sendEmailDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('files.sendEmailDialogDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="email-recipient">Email</Label>
+            <Input
+              id="email-recipient"
+              type="email"
+              placeholder={t('files.sendEmailPlaceholder')}
+              value={emailInput}
+              onChange={e => setEmailInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSendEmail(); }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEmailDialogFile(null); setEmailInput(''); }}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleSendEmail}
+              disabled={!emailInput || (emailDialogFile ? sendingEmailFiles.has(emailDialogFile.id) : false)}
+            >
+              {emailDialogFile && sendingEmailFiles.has(emailDialogFile.id)
+                ? t('files.sendEmailSending')
+                : t('files.sendEmailSend')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

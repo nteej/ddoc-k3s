@@ -4,11 +4,13 @@ namespace App\Infrastructure\Http\Controllers;
 
 use App\Application\Handlers\DestroyFileHandler;
 use App\Application\Handlers\FindByFiltersFileHandler;
+use App\Application\Handlers\SendFileEmailHandler;
 use App\Application\Handlers\StoreFileHandler;
 use App\Application\DTOs\FindByFiltersFileInputDTO;
 use App\Application\DTOs\StoreFileInputDTO;
 use App\Application\Handlers\DownloadFileHandler;
 use App\Infrastructure\Http\Requests\FindByFiltersFileRequest;
+use App\Infrastructure\Http\Requests\SendEmailFileRequest;
 use App\Infrastructure\Http\Requests\StoreFileRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -62,5 +64,11 @@ class FileController extends BaseController
         ));
 
         return $this->successResponse($output);
+    }
+
+    public function sendEmail(string $fileId, SendEmailFileRequest $request, SendFileEmailHandler $handler): JsonResponse
+    {
+        $handler->execute($fileId, $request->validated('email'));
+        return $this->successResponse(['sent' => true]);
     }
 }

@@ -18,11 +18,7 @@ import NotificationBell from '@/components/NotificationBell';
 import RoleGuard from '@/components/RoleGuard';
 
 const MONITORING_LINKS = [
-  { label: 'Grafana',    url: 'http://localhost:3000' },
-  { label: 'Prometheus', url: 'http://localhost:9090' },
-  { label: 'Loki',       url: 'http://localhost:3100' },
-  { label: 'Tempo',      url: 'http://localhost:3200' },
-  { label: 'Kong Admin', url: 'http://localhost:8001' },
+  { label: 'Grafana',    url: 'https://grafana.ddoc.fi/' },
 ];
 
 const LANGUAGES = [

@@ -455,6 +455,20 @@ const api = {
     };
   },
 
+  async sendFileEmail(fileId: string, email: string): Promise<void> {
+    const response = await fetch(`${BASE_URL}/files/${fileId}/send-email`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to send email');
+    }
+  },
+
   async downloadGeneratedFile(fileId: string, fileName: string): Promise<void> {
     const response = await fetch(`${BASE_URL}/files/download/${fileId}`, {
       method: 'GET',
