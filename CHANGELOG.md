@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 
+## [v1.6.0] - 2026-05-09
+
+
+### Features
+
+- feat: Kafka-based file email with PDF attachment & owner-only Settings isolation ([`ccb2f63`](../../commit/ccb2f63))
+
 ## [v1.0.0] - 2026-04-29
 
 
