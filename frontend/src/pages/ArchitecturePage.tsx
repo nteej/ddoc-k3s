@@ -2365,7 +2365,7 @@ const ArchitecturePage: React.FC = () => {
         <div className="relative max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <Server className="w-3.5 h-3.5" />
-            System Architecture — DynaDoc Flow
+            System Architecture — DynamicDocument Architecture
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
             Every Component. Every Connection.
@@ -2377,7 +2377,7 @@ const ArchitecturePage: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-3 mt-8">
             {[
               { n: Object.keys(ALL).length + ' Components', i: <Box className="w-3.5 h-3.5" /> },
-              { n: '4 Microservices', i: <Layers className="w-3.5 h-3.5" /> },
+              { n: '5 Microservices', i: <Layers className="w-3.5 h-3.5" /> },
               { n: '3 Kafka Brokers', i: <MessageSquare className="w-3.5 h-3.5" /> },
               { n: '4 Isolated DBs', i: <Database className="w-3.5 h-3.5" /> },
               { n: 'Full Observability', i: <Eye className="w-3.5 h-3.5" /> },

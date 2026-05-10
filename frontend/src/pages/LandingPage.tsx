@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileText, Tag, Zap, FileSpreadsheet, Code2, Globe,
-  ArrowRight, CheckCircle, ChevronRight,
+  ArrowRight, CheckCircle, ChevronRight, Eye, Key, Mail,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,11 @@ const LandingPage: React.FC = () => {
 
   const features = [
     { icon: <FileText className="w-6 h-6" />, title: t('landing.feat1Title'), desc: t('landing.feat1Desc'), bg: 'bg-blue-900' },
+    { icon: <Eye className="w-6 h-6" />, title: t('landing.feat7Title'), desc: t('landing.feat7Desc'), bg: 'bg-indigo-600' },
     { icon: <Tag className="w-6 h-6" />, title: t('landing.feat2Title'), desc: t('landing.feat2Desc'), bg: 'bg-sky-600' },
     { icon: <Zap className="w-6 h-6" />, title: t('landing.feat3Title'), desc: t('landing.feat3Desc'), bg: 'bg-orange-500' },
+    { icon: <Key className="w-6 h-6" />, title: t('landing.feat8Title'), desc: t('landing.feat8Desc'), bg: 'bg-amber-600' },
+    { icon: <Mail className="w-6 h-6" />, title: t('landing.feat9Title'), desc: t('landing.feat9Desc'), bg: 'bg-rose-600' },
     { icon: <FileSpreadsheet className="w-6 h-6" />, title: t('landing.feat4Title'), desc: t('landing.feat4Desc'), bg: 'bg-green-600' },
     { icon: <Code2 className="w-6 h-6" />, title: t('landing.feat5Title'), desc: t('landing.feat5Desc'), bg: 'bg-blue-700' },
     { icon: <Globe className="w-6 h-6" />, title: t('landing.feat6Title'), desc: t('landing.feat6Desc'), bg: 'bg-teal-600' },
