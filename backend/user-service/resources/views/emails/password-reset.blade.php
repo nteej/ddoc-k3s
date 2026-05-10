@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8">
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #fdfeff;; margin: 0; padding: 0; }
         .container { max-width: 480px; margin: 40px auto; background: #fff; border-radius: 8px; padding: 36px; }
         h2 { color: #1a1a2e; margin-top: 0; }
         p { color: #444; line-height: 1.6; }
-        .btn { display: inline-block; padding: 12px 28px; background: #4f46e5; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 16px 0; }
         .footer { margin-top: 32px; font-size: 12px; color: #999; }
+        .btn { display: inline-block; padding: 12px 28px; background: #221d77; color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 16px 0; }
     </style>
 </head>
 <body>

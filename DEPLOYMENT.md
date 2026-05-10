@@ -8,14 +8,15 @@ DynaDoc runs on a k3s Kubernetes cluster on an OVH VPS. Deployments are fully au
 
 ## Infrastructure
 
-| Component | Details |
-|-----------|---------|
-| Server | OVH VPS (Ubuntu 24.04) |
-| Orchestration | k3s (Kubernetes) |
-| Namespace | `dynadoc` |
-| Registry | `ghcr.io/<owner>/dynadoc/` |
-| Domain | `https://ddoc.fi` |
-| Git remote | `git@github.com:nteej/ddoc-k3s.git` |
+| Component  | Details                            |
+|------------|------------------------------------|
+| Server     | OVH VPS (Ubuntu 24.04)             |
+| Orchestration | k3s (Kubernetes)                |
+| Namespace  | `dynadoc`                          |
+| Registry   | `ghcr.io/<owner>/dynadoc/`         |
+| Domain     | `https://ddoc.fi`                  |
+| Git remote | `git@github.com:nteej/ddoc-k3s.git`|
+ -------------------------------------------------
 
 ---
 
