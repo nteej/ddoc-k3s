@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 
+## [v1.8.0] - 2026-05-14
+
+
+### Features
+
+- feat: SSO auth, Klarna payments, profile/settings UI & IaC Kustomize (v1.8.0) ([`f08cf2a`](../../commit/f08cf2a))
+
 ## [v1.6.0] - 2026-05-09
 
 
