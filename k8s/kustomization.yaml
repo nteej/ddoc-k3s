@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base manifest set.  Secrets are NOT included here — they are created
+# imperatively by k8s/scripts/init-secrets.sh so that plaintext credentials
+# never have to live in the overlay files.
+resources:
+  - namespaces/
+  - configmaps/
+  - infra/
+  - apps/
+  - frontend/
+  - observability/

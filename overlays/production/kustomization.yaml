@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Production overlay — extends the base with real registry + pinned image tags.
+#
+# To update image tags after a new release:
+#   make overlay-tag TAG=v1.8.0
+# or manually edit the newTag values below and commit.
+resources:
+  - ../../k8s
+
+# Image substitution: replaces the REGISTRY/dynadoc/<svc> placeholder used in
+# all base manifests with the actual GHCR coordinates and pinned tag.
+# The deploy script updates these automatically; they are committed as the
+# canonical "desired state" record for each release.
+images:
+  - name: REGISTRY/dynadoc/user-service
+    newName: ghcr.io/nteej/dynadoc/user-service
+    newTag: latest
+  - name: REGISTRY/dynadoc/template-service
+    newName: ghcr.io/nteej/dynadoc/template-service
+    newTag: latest
+  - name: REGISTRY/dynadoc/file-service
+    newName: ghcr.io/nteej/dynadoc/file-service
+    newTag: latest
+  - name: REGISTRY/dynadoc/audit-service
+    newName: ghcr.io/nteej/dynadoc/audit-service
+    newTag: latest
+  - name: REGISTRY/dynadoc/api-key-service
+    newName: ghcr.io/nteej/dynadoc/api-key-service
+    newTag: latest
+  - name: REGISTRY/dynadoc/webhook-service
+    newName: ghcr.io/nteej/dynadoc/webhook-service
+    newTag: latest
+  - name: REGISTRY/dynadoc/notification-service
+    newName: ghcr.io/nteej/dynadoc/notification-service
+    newTag: latest
+  - name: REGISTRY/dynadoc/frontend
+    newName: ghcr.io/nteej/dynadoc/frontend
+    newTag: latest

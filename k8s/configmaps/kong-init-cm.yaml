@@ -28,6 +28,7 @@ data:
       --data name=user-service \
       --data "url=$USER_SVC"
 
+    # Unauthenticated auth routes (no JWT plugin)
     curl -s -X POST "$KONG_ADMIN/services/user-service/routes" \
       --data 'paths[]=/api/auth/login' \
       --data 'paths[]=/api/auth/register' \
@@ -37,13 +38,27 @@ data:
       --data 'paths[]=/api/auth/reset-password' \
       --data 'paths[]=/api/auth/sso' \
       --data 'paths[]=/api/health' \
+      --data 'strip_path=false'
+
+    # JWT-protected user-service routes
+    AUTH_ROUTE_ID=$(curl -s -X POST "$KONG_ADMIN/services/user-service/routes" \
       --data 'paths[]=/api/organizations' \
       --data 'paths[]=/api/notifications' \
       --data 'paths[]=/api/api-keys' \
       --data 'paths[]=/api/webhooks' \
       --data 'paths[]=/api/invitations' \
       --data 'paths[]=/api/users' \
-      --data 'strip_path=false'
+      --data 'paths[]=/api/packages' \
+      --data 'paths[]=/api/admin' \
+      --data 'paths[]=/api/klarna' \
+      --data 'strip_path=false' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+    curl -s -X POST "$KONG_ADMIN/routes/$AUTH_ROUTE_ID/plugins" \
+      --data "name=jwt" \
+      --data "config.key_claim_name=iss" \
+      --data "config.claims_to_verify=exp" \
+      --data "config.run_on_preflight=false" \
+      --data "config.cookie_names=token"
 
     curl -s -X POST "$KONG_ADMIN/services" \
       --data name=template-service \

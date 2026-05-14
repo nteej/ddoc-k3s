@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - file-app.yaml
+  - file-consumer.yaml
+  - file-db.yaml
+  - file-queue.yaml

@@ -27,6 +27,9 @@ import {
   Package,
   PackageUsage,
   PackageUpgradeRequest,
+  KlarnaConfig,
+  KlarnaSettings,
+  KlarnaSession,
 } from '@/types';
 
 const BASE_URL = '/api';
@@ -841,6 +844,72 @@ const api = {
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.message || 'Failed to process request');
+    }
+  },
+
+  // ── Klarna ──────────────────────────────────────────────────────────────────
+
+  async getKlarnaConfig(): Promise<KlarnaConfig> {
+    const res = await fetch(`${BASE_URL}/klarna/config`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch Klarna config');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async createKlarnaSession(packageId: string, billingPeriod: 'monthly' | 'yearly'): Promise<KlarnaSession> {
+    const res = await fetch(`${BASE_URL}/klarna/sessions`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ package_id: packageId, billing_period: billingPeriod }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.message || 'Failed to create payment session');
+    }
+    const { data } = await res.json();
+    return data;
+  },
+
+  async completeKlarnaPayment(
+    authorizationToken: string,
+    packageId: string,
+    billingPeriod: 'monthly' | 'yearly',
+  ): Promise<PackageUpgradeRequest> {
+    const res = await fetch(`${BASE_URL}/klarna/complete`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authorization_token: authorizationToken, package_id: packageId, billing_period: billingPeriod }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.message || 'Payment failed');
+    }
+    const { data } = await res.json();
+    return data.request;
+  },
+
+  async getKlarnaSettings(): Promise<KlarnaSettings> {
+    const res = await fetch(`${BASE_URL}/admin/klarna-settings`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch Klarna settings');
+    const { data } = await res.json();
+    return data;
+  },
+
+  async updateKlarnaSettings(settings: Partial<KlarnaSettings & {
+    sandbox_password?: string;
+    production_password?: string;
+  }>): Promise<void> {
+    const res = await fetch(`${BASE_URL}/admin/klarna-settings`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.message || 'Failed to save Klarna settings');
     }
   },
 };

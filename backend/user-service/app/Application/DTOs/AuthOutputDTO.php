@@ -11,6 +11,7 @@ final class AuthOutputDTO extends BaseDTO
         public readonly string $email,
         public readonly string $token,
         public readonly string $role = 'viewer',
+        public readonly bool   $isSystemAdmin = false,
     ) {
     }
 }

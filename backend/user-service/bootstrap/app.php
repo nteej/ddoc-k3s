@@ -16,8 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(HandleCors::class);
         $middleware->alias([
-            'jwt.auth' => ExtractJwtClaimsMiddleware::class,
-            'rbac'     => \App\Infrastructure\Http\Middlewares\RbacMiddleware::class,
+            'jwt.auth'     => ExtractJwtClaimsMiddleware::class,
+            'rbac'         => \App\Infrastructure\Http\Middlewares\RbacMiddleware::class,
+            'system_admin' => \App\Infrastructure\Http\Middlewares\SystemAdminMiddleware::class,
         ]);
 
     })

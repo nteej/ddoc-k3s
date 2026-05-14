@@ -66,6 +66,9 @@ class SsoController extends BaseController
             $role    = $member?->role ?? 'viewer';
         }
 
+        $adminEmail    = env('SYSTEM_ADMIN_EMAIL', '');
+        $isSystemAdmin = $adminEmail !== '' && strtolower($user->email) === strtolower($adminEmail);
+
         $jwt = app(JwtService::class)->generateToken([
             'userId'           => $user->id,
             'name'             => $user->name,
@@ -73,6 +76,7 @@ class SsoController extends BaseController
             'organizationId'   => $orgId,
             'organizationSlug' => $orgSlug,
             'role'             => $role,
+            'isSystemAdmin'    => $isSystemAdmin,
         ]);
 
         $cookie = cookie(
@@ -81,7 +85,7 @@ class SsoController extends BaseController
             minutes:  (int) env('JWT_TTL', 21000) / 60,
             path:     '/',
             domain:   null,
-            secure:   false,
+            secure:   true,
             httpOnly: true,
             sameSite: 'Strict',
         );

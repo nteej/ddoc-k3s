@@ -27,10 +27,11 @@ class AuthController extends BaseController
         ));
 
         return $this->successResponse([
-            'id'    => $output->id,
-            'name'  => $output->name,
-            'email' => $output->email,
-            'role'  => $output->role,
+            'id'            => $output->id,
+            'name'          => $output->name,
+            'email'         => $output->email,
+            'role'          => $output->role,
+            'isSystemAdmin' => $output->isSystemAdmin,
         ])->cookie($this->makeTokenCookie($output->token));
     }
 
@@ -43,10 +44,11 @@ class AuthController extends BaseController
         ));
 
         return $this->successResponse([
-            'id'    => $output->id,
-            'name'  => $output->name,
-            'email' => $output->email,
-            'role'  => $output->role,
+            'id'            => $output->id,
+            'name'          => $output->name,
+            'email'         => $output->email,
+            'role'          => $output->role,
+            'isSystemAdmin' => $output->isSystemAdmin,
         ], 201)->cookie($this->makeTokenCookie($output->token));
     }
 
@@ -55,10 +57,11 @@ class AuthController extends BaseController
         $user = $request->attributes->get('loggedUser');
 
         return $this->successResponse([
-            'id'    => $user['userId'],
-            'name'  => $user['name'],
-            'email' => $user['email'],
-            'role'  => $user['role'] ?? 'viewer',
+            'id'            => $user['userId'],
+            'name'          => $user['name'],
+            'email'         => $user['email'],
+            'role'          => $user['role'] ?? 'viewer',
+            'isSystemAdmin' => (bool) ($user['isSystemAdmin'] ?? false),
         ]);
     }
 

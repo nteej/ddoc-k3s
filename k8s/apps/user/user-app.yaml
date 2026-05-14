@@ -17,6 +17,7 @@ spec:
       initContainers:
         - name: copy-public
           image: REGISTRY/dynadoc/user-service:latest
+          imagePullPolicy: IfNotPresent
           command:
             - sh
             - -c
@@ -27,6 +28,7 @@ spec:
       containers:
         - name: php-fpm
           image: REGISTRY/dynadoc/user-service:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9000
           env:
@@ -93,6 +95,32 @@ spec:
               value: DynaDoc
             - name: FRONTEND_URL
               value: https://ddoc.fi
+            - name: SYSTEM_ADMIN_EMAIL
+              value: liyana.fin@gmail.com
+            - name: GOOGLE_REDIRECT_URI
+              value: https://ddoc.fi/api/auth/sso/google/callback
+            - name: GITHUB_REDIRECT_URI
+              value: https://ddoc.fi/api/auth/sso/github/callback
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secret
+                  key: GOOGLE_CLIENT_ID
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secret
+                  key: GOOGLE_CLIENT_SECRET
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secret
+                  key: GITHUB_CLIENT_ID
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sso-secret
+                  key: GITHUB_CLIENT_SECRET
           volumeMounts:
             - name: public-files
               mountPath: /var/www/html/public

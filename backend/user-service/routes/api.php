@@ -3,6 +3,8 @@
 use App\Infrastructure\Http\Controllers\ApiKeyController;
 use App\Infrastructure\Http\Controllers\AuthController;
 use App\Infrastructure\Http\Controllers\HealthController;
+use App\Infrastructure\Http\Controllers\KlarnaController;
+use App\Infrastructure\Http\Controllers\KlarnaSettingsController;
 use App\Infrastructure\Http\Controllers\NotificationController;
 use App\Infrastructure\Http\Controllers\OrganizationController;
 use App\Infrastructure\Http\Controllers\PackageController;
@@ -77,8 +79,17 @@ Route::middleware('jwt.auth')->group(function () {
     Route::post('/organizations/current/upgrade-request', [PackageUpgradeController::class, 'requestUpgrade']);
 });
 
-// Admin package management and upgrade approvals
-Route::middleware(['jwt.auth', 'rbac:admin'])->group(function () {
+// Klarna — config is public (authenticated), sessions/complete require auth
+Route::middleware('jwt.auth')->group(function () {
+    Route::get('/klarna/config',       [KlarnaController::class, 'config']);
+    Route::post('/klarna/sessions',    [KlarnaController::class, 'createSession']);
+    Route::post('/klarna/complete',    [KlarnaController::class, 'complete']);
+});
+
+// Admin package management, upgrade approvals, and Klarna settings — system admin only
+Route::middleware(['jwt.auth', 'system_admin'])->group(function () {
+    Route::get('/admin/klarna-settings',   [KlarnaSettingsController::class, 'show']);
+    Route::patch('/admin/klarna-settings', [KlarnaSettingsController::class, 'update']);
     Route::get('/admin/packages',                [PackageController::class, 'index']);
     Route::post('/admin/packages',               [PackageController::class, 'store']);
     Route::patch('/admin/packages/{id}',         [PackageController::class, 'update']);

@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - alertmanager-cm.yaml
+  - grafana-dashboard-dynadoc.yaml
+  - grafana-dashboard-k8s.yaml
+  - grafana-dashboard-system.yaml
+  - grafana-dashboards-cm.yaml
+  - grafana-datasources-cm.yaml
+  - loki-cm.yaml
+  - prometheus-cm.yaml
+  - prometheus-rules-cm.yaml
+  - promtail-cm.yaml
+  - tempo-cm.yaml

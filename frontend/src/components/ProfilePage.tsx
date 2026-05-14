@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   User as UserIcon, Mail, Lock, Save, Loader2, Camera,
   KeyRound, Copy, Trash2, Package, ArrowUpCircle, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ApiKey, Role, Package as PackageType, PackageUsage, UpdateProfileData } from '@/types';
+import { ApiKey, KlarnaConfig, Role, Package as PackageType, PackageUsage, UpdateProfileData } from '@/types';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -379,40 +379,115 @@ function UpgradePlanTab() {
   const [packages, setPackages] = useState<PackageType[]>([]);
   const [currentSlug, setCurrentSlug] = useState<string>('free');
   const [loading, setLoading] = useState(true);
+  const [klarnaConfig, setKlarnaConfig] = useState<KlarnaConfig | null>(null);
+
   const [selectedPkg, setSelectedPkg] = useState<PackageType | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ card: '', expiry: '', cvc: '' });
+  const [billingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [klarnaStage, setKlarnaStage] = useState<'idle' | 'session' | 'widget' | 'authorizing'>('idle');
+  const [paymentCategory, setPaymentCategory] = useState('pay_now');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const klarnaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    Promise.all([api.getPackages(), api.getCurrentPackage()])
-      .then(([pkgs, current]) => {
+    Promise.all([api.getPackages(), api.getCurrentPackage(), api.getKlarnaConfig()])
+      .then(([pkgs, current, kConfig]) => {
         setPackages(pkgs);
         setCurrentSlug(current.package?.slug ?? 'free');
+        setKlarnaConfig(kConfig);
       })
       .catch(() => toast({ title: 'Failed to load packages', variant: 'destructive' }))
       .finally(() => setLoading(false));
   }, []);
 
-  const currentPlan = currentSlug;
+  const loadKlarnaScript = (): Promise<void> =>
+    new Promise((resolve, reject) => {
+      if (window.Klarna) { resolve(); return; }
+      const existing = document.getElementById('klarna-sdk');
+      if (existing) { existing.addEventListener('load', () => resolve()); return; }
+      const s = document.createElement('script');
+      s.id = 'klarna-sdk';
+      s.src = 'https://x.klarnacdn.net/kp/lib/v1/api.js';
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Failed to load Klarna SDK'));
+      document.head.appendChild(s);
+    });
 
-  const handleUpgrade = async () => {
-    if (!selectedPkg) return;
-    if (!paymentForm.card || !paymentForm.expiry || !paymentForm.cvc) {
-      toast({ title: 'Please fill in payment details', variant: 'destructive' });
+  const openKlarnaDialog = async (pkg: PackageType) => {
+    setSelectedPkg(pkg);
+
+    if (pkg.price_monthly === 0) {
+      // Free plan — no payment needed
+      setKlarnaStage('idle');
       return;
     }
+
+    setKlarnaStage('session');
     try {
-      setSubmitting(true);
-      await api.submitUpgradeRequest(selectedPkg.id, `mock-klarna-${Date.now()}`);
-      setSuccess(true);
+      const session = await api.createKlarnaSession(pkg.id, billingPeriod);
+      const category = session.payment_method_categories?.[0]?.identifier ?? 'pay_now';
+      setPaymentCategory(category);
+
+      await loadKlarnaScript();
+      window.Klarna!.Payments.init({ client_token: session.client_token });
+
+      setKlarnaStage('widget');
+      // Give React a tick to mount the container div before calling load()
+      setTimeout(() => {
+        window.Klarna!.Payments.load(
+          { container: '#klarna-payments-container', payment_method_category: category },
+          {},
+          (res) => { if (!res.show_form) toast({ title: 'Klarna widget unavailable', variant: 'destructive' }); },
+        );
+      }, 100);
+    } catch (e: unknown) {
+      toast({ title: 'Payment init failed', description: e instanceof Error ? e.message : '', variant: 'destructive' });
       setSelectedPkg(null);
-      setPaymentForm({ card: '', expiry: '', cvc: '' });
+      setKlarnaStage('idle');
+    }
+  };
+
+  const handleKlarnaPay = () => {
+    if (!selectedPkg) return;
+    setKlarnaStage('authorizing');
+    window.Klarna!.Payments.authorize({ payment_method_category: paymentCategory }, {}, async (res) => {
+      if (res.approved && res.authorization_token) {
+        try {
+          setSubmitting(true);
+          await api.completeKlarnaPayment(res.authorization_token, selectedPkg.id, billingPeriod);
+          setSuccess(true);
+          handleCloseDialog();
+        } catch (e: unknown) {
+          toast({ title: 'Payment failed', description: e instanceof Error ? e.message : '', variant: 'destructive' });
+          setKlarnaStage('widget');
+        } finally {
+          setSubmitting(false);
+        }
+      } else {
+        toast({ title: 'Payment not approved', variant: 'destructive' });
+        setKlarnaStage('widget');
+      }
+    });
+  };
+
+  const handleFreeUpgrade = async () => {
+    if (!selectedPkg) return;
+    setSubmitting(true);
+    try {
+      await api.submitUpgradeRequest(selectedPkg.id);
+      setSuccess(true);
+      handleCloseDialog();
     } catch (e: unknown) {
       toast({ title: 'Upgrade failed', description: e instanceof Error ? e.message : '', variant: 'destructive' });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedPkg(null);
+    setKlarnaStage('idle');
   };
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>;
@@ -435,12 +510,14 @@ function UpgradePlanTab() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {packages.map(pkg => {
-          const isCurrent = pkg.slug === currentPlan;
+          const isCurrent = pkg.slug === currentSlug;
+          const isFree = pkg.price_monthly === 0;
+          const canSelect = !isCurrent && (isFree || klarnaConfig?.is_configured);
           return (
             <Card
               key={pkg.id}
-              className={`glass-card border-2 transition-all cursor-pointer ${isCurrent ? 'border-blue-900 bg-blue-50/30' : 'border-gray-200 hover:border-blue-400'}`}
-              onClick={() => !isCurrent && setSelectedPkg(pkg)}
+              className={`glass-card border-2 transition-all ${canSelect ? 'cursor-pointer hover:border-blue-400' : 'opacity-60'} ${isCurrent ? 'border-blue-900 bg-blue-50/30' : 'border-gray-200'}`}
+              onClick={() => canSelect && openKlarnaDialog(pkg)}
             >
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -448,7 +525,7 @@ function UpgradePlanTab() {
                   {isCurrent && <Badge className="bg-blue-900 text-white">Current</Badge>}
                 </div>
                 <CardDescription>
-                  {pkg.price_monthly === 0 ? 'Free' : `€${pkg.price_monthly}/month`}
+                  {isFree ? 'Free' : `€${pkg.price_monthly}/month`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -461,8 +538,9 @@ function UpgradePlanTab() {
                 </ul>
                 {!isCurrent && (
                   <Button size="sm" className="w-full bg-blue-900 hover:bg-blue-800 text-white"
-                    onClick={e => { e.stopPropagation(); setSelectedPkg(pkg); }}>
-                    Select
+                    disabled={!canSelect}
+                    onClick={e => { e.stopPropagation(); canSelect && openKlarnaDialog(pkg); }}>
+                    {isFree ? 'Switch to Free' : (klarnaConfig?.is_configured ? 'Upgrade' : 'Payment not configured')}
                   </Button>
                 )}
               </CardContent>
@@ -471,48 +549,67 @@ function UpgradePlanTab() {
         })}
       </div>
 
-      {/* Mock Klarna Payment Dialog */}
-      <Dialog open={!!selectedPkg} onOpenChange={open => { if (!open) { setSelectedPkg(null); setPaymentForm({ card: '', expiry: '', cvc: '' }); } }}>
-        <DialogContent className="sm:max-w-md">
+      {!klarnaConfig?.is_configured && packages.some(p => p.price_monthly > 0) && (
+        <p className="text-sm text-amber-600 text-center">
+          Paid plan upgrades require payment gateway setup. Contact your administrator.
+        </p>
+      )}
+
+      {/* Klarna Payment Dialog */}
+      <Dialog open={!!selectedPkg} onOpenChange={open => { if (!open) handleCloseDialog(); }}>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="w-8 h-8 rounded bg-[#FFB3C7] flex items-center justify-center text-xs font-bold text-black">K</div>
-              Pay with Klarna
+              {selectedPkg?.price_monthly === 0 ? `Switch to ${selectedPkg?.name}` : 'Pay with Klarna'}
             </DialogTitle>
             <DialogDescription>
-              Upgrading to <strong>{selectedPkg?.name}</strong> — €{selectedPkg?.price_monthly}/month
+              Upgrading to <strong>{selectedPkg?.name}</strong>
+              {selectedPkg && selectedPkg.price_monthly > 0 && ` — €${selectedPkg.price_monthly}/month`}
+              {klarnaConfig && <span className="ml-2 text-xs text-gray-400">({klarnaConfig.mode} mode)</span>}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Card Number</Label>
-              <Input placeholder="1234 5678 9012 3456" value={paymentForm.card}
-                onChange={e => setPaymentForm(p => ({ ...p, card: e.target.value }))}
-                maxLength={19} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Expiry</Label>
-                <Input placeholder="MM/YY" value={paymentForm.expiry}
-                  onChange={e => setPaymentForm(p => ({ ...p, expiry: e.target.value }))}
-                  maxLength={5} />
+
+          <div className="py-2 min-h-[120px]">
+            {/* Free plan — no payment */}
+            {selectedPkg?.price_monthly === 0 && (
+              <p className="text-sm text-gray-600">No payment required. Submit to request the plan change.</p>
+            )}
+
+            {/* Loading session */}
+            {selectedPkg && selectedPkg.price_monthly > 0 && klarnaStage === 'session' && (
+              <div className="flex items-center gap-3 text-gray-500">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Connecting to Klarna…</span>
               </div>
-              <div className="space-y-2">
-                <Label>CVC</Label>
-                <Input placeholder="123" value={paymentForm.cvc}
-                  onChange={e => setPaymentForm(p => ({ ...p, cvc: e.target.value }))}
-                  maxLength={4} />
-              </div>
-            </div>
-            <p className="text-xs text-gray-400">This is a demo payment UI. No real transaction will occur.</p>
+            )}
+
+            {/* Klarna widget container */}
+            {selectedPkg && selectedPkg.price_monthly > 0 && (klarnaStage === 'widget' || klarnaStage === 'authorizing') && (
+              <div id="klarna-payments-container" ref={klarnaContainerRef} className="min-h-[100px]" />
+            )}
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setSelectedPkg(null); setPaymentForm({ card: '', expiry: '', cvc: '' }); }}>
+            <Button variant="outline" onClick={handleCloseDialog} disabled={submitting || klarnaStage === 'authorizing'}>
               Cancel
             </Button>
-            <Button onClick={handleUpgrade} disabled={submitting} className="bg-[#FFB3C7] hover:bg-[#ff9ab8] text-black font-semibold">
-              {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing…</> : 'Pay & Upgrade'}
-            </Button>
+
+            {selectedPkg?.price_monthly === 0 ? (
+              <Button onClick={handleFreeUpgrade} disabled={submitting} className="bg-blue-900 hover:bg-blue-800 text-white">
+                {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting…</> : 'Confirm'}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleKlarnaPay}
+                disabled={klarnaStage !== 'widget' || submitting}
+                className="bg-[#FFB3C7] hover:bg-[#ff9ab8] text-black font-semibold"
+              >
+                {klarnaStage === 'authorizing' || submitting
+                  ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing…</>
+                  : 'Pay with Klarna'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

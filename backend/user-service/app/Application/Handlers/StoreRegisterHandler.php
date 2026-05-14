@@ -22,6 +22,12 @@ final readonly class StoreRegisterHandler
         private OrganizationRepository  $organizationRepository,
     ) {}
 
+    private function isSystemAdmin(string $email): bool
+    {
+        $adminEmail = env('SYSTEM_ADMIN_EMAIL', '');
+        return $adminEmail !== '' && strtolower($email) === strtolower($adminEmail);
+    }
+
     public function execute(RegisterInputDTO $input): AuthOutputDTO
     {
         if ($this->userRepository->exists($input->email)) {
@@ -48,6 +54,8 @@ final readonly class StoreRegisterHandler
         $this->organizationRepository->addMember($member);
         $this->userRepository->updateOrganization($user->id, $org->id);
 
+        $isSystemAdmin = $this->isSystemAdmin($user->email);
+
         $token = app(JwtService::class)->generateToken([
             'userId'           => $user->id,
             'name'             => $user->name,
@@ -55,14 +63,16 @@ final readonly class StoreRegisterHandler
             'organizationId'   => $org->id,
             'organizationSlug' => $org->slug,
             'role'             => 'owner',
+            'isSystemAdmin'    => $isSystemAdmin,
         ]);
 
         return new AuthOutputDTO(
-            id:    $user->id,
-            name:  $user->name,
-            email: $user->email,
-            token: $token,
-            role:  'owner',
+            id:            $user->id,
+            name:          $user->name,
+            email:         $user->email,
+            token:         $token,
+            role:          'owner',
+            isSystemAdmin: $isSystemAdmin,
         );
     }
 }

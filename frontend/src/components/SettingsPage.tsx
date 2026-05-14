@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, CheckCircle2, XCircle, Package, Loader2, Plus, Edit, Trash2 } from 'lucide-react';
+import { Settings, CheckCircle2, XCircle, Package, Loader2, Plus, Edit, Trash2, CreditCard, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package as PackageType, PackageUpgradeRequest } from '@/types';
+import { KlarnaSettings, Package as PackageType, PackageUpgradeRequest } from '@/types';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +16,9 @@ import { useToast } from '@/hooks/use-toast';
 
 const SettingsPage: React.FC = () => {
   const { user } = useAuth();
-  const isOwner = user?.role === 'owner';
+  const isSystemAdmin = user?.isSystemAdmin === true;
 
-  if (!isOwner) {
+  if (!isSystemAdmin) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div>
@@ -71,6 +71,18 @@ const GlobalSettingsTab: React.FC = () => {
   const [upgradeRequests, setUpgradeRequests] = useState<PackageUpgradeRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [klarnaSettings, setKlarnaSettings] = useState<KlarnaSettings | null>(null);
+  const [klarnaForm, setKlarnaForm] = useState({
+    mode: 'sandbox' as 'sandbox' | 'production',
+    sandbox_username: '',
+    sandbox_password: '',
+    production_username: '',
+    production_password: '',
+  });
+  const [showSandboxPwd, setShowSandboxPwd] = useState(false);
+  const [showProdPwd, setShowProdPwd] = useState(false);
+  const [klarnaSaving, setKlarnaSaving] = useState(false);
+
   const [showPkgDialog, setShowPkgDialog] = useState(false);
   const [editingPkg, setEditingPkg] = useState<PackageType | null>(null);
   const [pkgForm, setPkgForm] = useState(emptyPkgForm());
@@ -82,12 +94,20 @@ const GlobalSettingsTab: React.FC = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const [pkgs, requests] = await Promise.all([
+      const [pkgs, requests, kSettings] = await Promise.all([
         api.getAdminPackages(),
         api.getUpgradeRequests(),
+        api.getKlarnaSettings(),
       ]);
       setPackages(pkgs);
       setUpgradeRequests(requests);
+      setKlarnaSettings(kSettings);
+      setKlarnaForm(f => ({
+        ...f,
+        mode: kSettings.mode,
+        sandbox_username: kSettings.sandbox_username ?? '',
+        production_username: kSettings.production_username ?? '',
+      }));
     } catch {
       toast({ title: 'Failed to load global settings', variant: 'destructive' });
     } finally {
@@ -96,6 +116,25 @@ const GlobalSettingsTab: React.FC = () => {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleSaveKlarna = async () => {
+    setKlarnaSaving(true);
+    try {
+      await api.updateKlarnaSettings({
+        mode: klarnaForm.mode,
+        sandbox_username: klarnaForm.sandbox_username || undefined,
+        sandbox_password: klarnaForm.sandbox_password || undefined,
+        production_username: klarnaForm.production_username || undefined,
+        production_password: klarnaForm.production_password || undefined,
+      });
+      toast({ title: 'Klarna settings saved' });
+      await load();
+    } catch (e: unknown) {
+      toast({ title: 'Failed to save', description: e instanceof Error ? e.message : '', variant: 'destructive' });
+    } finally {
+      setKlarnaSaving(false);
+    }
+  };
 
   const openCreate = () => { setEditingPkg(null); setPkgForm(emptyPkgForm()); setShowPkgDialog(true); };
   const openEdit = (pkg: PackageType) => {
@@ -285,6 +324,101 @@ const GlobalSettingsTab: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Klarna Payment Gateway Config */}
+      <div>
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-2">
+            <CreditCard className="w-5 h-5" /> Payment Gateway (Klarna)
+          </h2>
+          <p className="text-gray-500 text-sm flex items-center gap-2 mt-1">
+            Active mode:
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${klarnaSettings?.mode === 'production' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+              {klarnaSettings?.mode === 'production' ? 'Production' : 'Sandbox'}
+            </span>
+            {klarnaSettings?.is_configured
+              ? <span className="text-green-600 text-xs">● Configured</span>
+              : <span className="text-red-500 text-xs">● Not configured</span>}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-gray-200 p-5 space-y-5 bg-white">
+          {/* Mode toggle */}
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700 w-20">Mode</span>
+            <div className="flex rounded-md border border-gray-200 overflow-hidden text-sm">
+              {(['sandbox', 'production'] as const).map(m => (
+                <button key={m} onClick={() => setKlarnaForm(f => ({ ...f, mode: m }))}
+                  className={`px-4 py-1.5 capitalize transition-colors ${klarnaForm.mode === m ? 'bg-blue-900 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-6">
+            {/* Sandbox credentials */}
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-amber-700 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Sandbox
+                {klarnaSettings?.sandbox_password_set && <span className="ml-auto text-xs text-gray-400 font-normal">password set</span>}
+              </p>
+              <div className="space-y-1">
+                <Label className="text-xs">API Username</Label>
+                <Input placeholder="PK12345_…" value={klarnaForm.sandbox_username}
+                  onChange={e => setKlarnaForm(f => ({ ...f, sandbox_username: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">API Password</Label>
+                <div className="relative">
+                  <Input type={showSandboxPwd ? 'text' : 'password'}
+                    placeholder={klarnaSettings?.sandbox_password_set ? 'Leave blank to keep existing' : 'Enter password'}
+                    value={klarnaForm.sandbox_password}
+                    onChange={e => setKlarnaForm(f => ({ ...f, sandbox_password: e.target.value }))}
+                    className="pr-9" />
+                  <button type="button" onClick={() => setShowSandboxPwd(v => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showSandboxPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Production credentials */}
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-green-700 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Production
+                {klarnaSettings?.production_password_set && <span className="ml-auto text-xs text-gray-400 font-normal">password set</span>}
+              </p>
+              <div className="space-y-1">
+                <Label className="text-xs">API Username</Label>
+                <Input placeholder="PK12345_…" value={klarnaForm.production_username}
+                  onChange={e => setKlarnaForm(f => ({ ...f, production_username: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">API Password</Label>
+                <div className="relative">
+                  <Input type={showProdPwd ? 'text' : 'password'}
+                    placeholder={klarnaSettings?.production_password_set ? 'Leave blank to keep existing' : 'Enter password'}
+                    value={klarnaForm.production_password}
+                    onChange={e => setKlarnaForm(f => ({ ...f, production_password: e.target.value }))}
+                    className="pr-9" />
+                  <button type="button" onClick={() => setShowProdPwd(v => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showProdPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button onClick={handleSaveKlarna} disabled={klarnaSaving} className="bg-blue-900 hover:bg-blue-800 text-white gap-2">
+              {klarnaSaving ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : 'Save Klarna Settings'}
+            </Button>
+          </div>
         </div>
       </div>
 

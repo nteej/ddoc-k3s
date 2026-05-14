@@ -58,6 +58,28 @@ push-service:  ## Build and push a single service: make push-service SVC=user-se
 	docker tag $(REGISTRY)/$(SVC):$(TAG) $(REGISTRY)/$(SVC):latest
 	docker push $(REGISTRY)/$(SVC):latest
 
+# ─── Kustomize / IaC ──────────────────────────────────────────────────────────
+
+.PHONY: validate
+validate:  ## Validate production overlay renders without errors
+	@kubectl kustomize overlays/production > /dev/null && echo "✓ kustomize build OK"
+	@kubectl apply --dry-run=client -k overlays/production/ > /dev/null && echo "✓ dry-run OK"
+
+.PHONY: diff
+diff:  ## Show diff between desired state and live cluster (requires cluster access)
+	kubectl diff -k overlays/production/ 2>/dev/null || true
+
+.PHONY: apply
+apply:  ## Idempotent apply of full desired state (skips ordering — use deploy for first install)
+	kubectl apply -k overlays/production/
+
+.PHONY: overlay-tag
+overlay-tag:  ## Pin a release tag in the production overlay: make overlay-tag TAG=v1.8.0
+	@test -n "$(TAG)" || (echo "Usage: make overlay-tag TAG=v1.8.0" && exit 1)
+	@sed -i "s|^\(\s*newTag:\) .*|\1 $(TAG)|g" overlays/production/kustomization.yaml
+	@echo "Updated overlay image tags to $(TAG)"
+	@grep newTag overlays/production/kustomization.yaml
+
 # ─── Deployment ───────────────────────────────────────────────────────────────
 
 .PHONY: deploy

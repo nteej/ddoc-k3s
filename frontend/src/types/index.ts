@@ -63,6 +63,7 @@ export interface User {
   avatar?: string;
   organization?: Organization;
   role?: Role;
+  isSystemAdmin?: boolean;
 }
 
 export interface Company {
@@ -221,6 +222,26 @@ export interface PackageUsage {
   api_keys: number;
   members: number;
   monthly_generations: number;
+}
+
+export interface KlarnaConfig {
+  mode: 'sandbox' | 'production';
+  is_configured: boolean;
+}
+
+export interface KlarnaSettings {
+  mode: 'sandbox' | 'production';
+  sandbox_username: string | null;
+  sandbox_password_set: boolean;
+  production_username: string | null;
+  production_password_set: boolean;
+  is_configured: boolean;
+}
+
+export interface KlarnaSession {
+  client_token: string;
+  session_id: string;
+  payment_method_categories: Array<{ identifier: string; name: string; asset_urls: object }>;
 }
 
 export interface PackageUpgradeRequest {

@@ -10,6 +10,8 @@ build/
 coverage/
 .env
 *.env
+.env.*
+k8s/secrets/sso-secrets.yaml
 *.bak
 *.backup
 *.swp

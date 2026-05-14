@@ -29,14 +29,15 @@ final readonly class StoreAuthHandler
             throw new AuthenticationException('Invalid credentials');
         }
 
-        ['token' => $jwt, 'role' => $role] = $this->buildToken($user);
+        ['token' => $jwt, 'role' => $role, 'isSystemAdmin' => $isSystemAdmin] = $this->buildToken($user);
 
         $outputDTO = new AuthOutputDTO(
-            id:    $user->id,
-            name:  $user->name,
-            email: $user->email,
-            token: $jwt,
-            role:  $role,
+            id:            $user->id,
+            name:          $user->name,
+            email:         $user->email,
+            token:         $jwt,
+            role:          $role,
+            isSystemAdmin: $isSystemAdmin,
         );
 
         event(new UserLoggedIn($outputDTO));
@@ -46,9 +47,10 @@ final readonly class StoreAuthHandler
 
     private function buildToken(User $user): array
     {
-        $orgId   = $user->currentOrganizationId;
-        $orgSlug = null;
-        $role    = 'viewer';
+        $orgId        = $user->currentOrganizationId;
+        $orgSlug      = null;
+        $role         = 'viewer';
+        $isSystemAdmin = $this->isSystemAdmin($user->email);
 
         if ($orgId) {
             $org    = $this->organizationRepository->findById($orgId);
@@ -64,8 +66,15 @@ final readonly class StoreAuthHandler
             'organizationId'   => $orgId,
             'organizationSlug' => $orgSlug,
             'role'             => $role,
+            'isSystemAdmin'    => $isSystemAdmin,
         ]);
 
-        return ['token' => $token, 'role' => $role];
+        return ['token' => $token, 'role' => $role, 'isSystemAdmin' => $isSystemAdmin];
+    }
+
+    private function isSystemAdmin(string $email): bool
+    {
+        $adminEmail = env('SYSTEM_ADMIN_EMAIL', '');
+        return $adminEmail !== '' && strtolower($email) === strtolower($adminEmail);
     }
 }
