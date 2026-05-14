@@ -8,6 +8,8 @@ import {
   ChevronsDown, RefreshCw, Workflow, AlertTriangle,
   WifiOff, Loader2, Bell, BellOff, Volume2,
   Play, Pause, SkipBack, SkipForward, RotateCcw,
+  Key, CreditCard, GitMerge, Router, History, Package,
+  LogIn,
 } from 'lucide-react';
 import LogoMark from '@/components/LogoMark';
 import { useSystemHealth, type ServiceStatus, type SystemHealth } from '@/hooks/useSystemHealth';
@@ -123,11 +125,11 @@ const ALL: Record<string, Comp> = {
     id: 'user-app', label: 'user-app', sub: 'Laravel 12 · PHP-FPM :9000',
     icon: <Lock className="w-4 h-4" />, image: 'dynadoc-flow-user-app',
     ports: ['9000 (FPM, internal)'], kind: 'service',
-    description: 'User Service — handles all identity and auth operations. Issues RS256 JWTs. On login, publishes a `user.logged` event to Kafka. Password reset publishes a `notification.send` event so the Notification Service dispatches the reset email.',
-    tech: ['PHP Laravel 12', 'PHP-FPM', 'PostgreSQL', 'JWT RS256', 'rdkafka', 'OpenTelemetry'],
-    responsibilities: ['User registration & login', 'JWT issuance & rotation', 'Password reset flow', 'Profile management', 'Publishes user.logged to Kafka', 'Publishes notification.send for password reset emails'],
+    description: 'User Service — handles all identity and auth operations. Issues RS256 JWTs. Supports native login, Google OAuth, and GitHub OAuth (SSO). Integrates Klarna Payments for subscription checkout. On login, publishes a `user.logged` event to Kafka. Password reset publishes a `notification.send` event so the Notification Service dispatches the reset email.',
+    tech: ['PHP Laravel 12', 'PHP-FPM', 'PostgreSQL', 'JWT RS256', 'rdkafka', 'OpenTelemetry', 'Google OAuth 2.0', 'GitHub OAuth', 'Klarna Payments API'],
+    responsibilities: ['User registration & login', 'JWT issuance & rotation', 'SSO via Google OAuth 2.0', 'SSO via GitHub OAuth', 'Klarna checkout session creation', 'Klarna order capture & cancel', 'Klarna settings management (system admin)', 'Password reset flow', 'Profile management', 'Publishes user.logged to Kafka', 'Publishes notification.send for password reset emails'],
     topics: ['user.logged', 'notification.send'],
-    config: { env: ['DB_HOST=user-db', 'DB_PORT=5432', 'REDIS_HOST=redis', 'KAFKA_BROKERS=kafka-svc:9092', 'JWT_ALGO=RS256', 'FRONTEND_URL=https://ddoc.fi'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
+    config: { env: ['DB_HOST=user-db', 'DB_PORT=5432', 'REDIS_HOST=redis', 'KAFKA_BROKERS=kafka-svc:9092', 'JWT_ALGO=RS256', 'FRONTEND_URL=https://ddoc.fi', 'GOOGLE_CLIENT_ID=<secret>', 'GITHUB_CLIENT_ID=<secret>'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
   },
   'template-app': {
     id: 'template-app', label: 'template-app', sub: 'Laravel 12 · PHP-FPM :9000',
@@ -359,6 +361,73 @@ const ALL: Record<string, Comp> = {
     tech: ['cAdvisor v0.49.1', 'Prometheus exporter'],
     responsibilities: ['Per-container CPU & memory', 'Network I/O metrics', 'Disk I/O metrics', 'Expose /metrics for Prometheus'],
   },
+  alertmanager: {
+    id: 'alertmanager', label: 'AlertManager', sub: ':9093',
+    icon: <AlertTriangle className="w-4 h-4" />, image: 'prom/alertmanager:v0.27.0',
+    ports: ['9093'], kind: 'observe',
+    description: 'Prometheus AlertManager v0.27.0 — routes firing alerts from Prometheus to configured receivers (email, Slack, PagerDuty). Handles alert grouping, inhibition, and silencing.',
+    tech: ['AlertManager v0.27.0', 'Prometheus Alerting'],
+    responsibilities: ['Receive Prometheus alerts', 'Group & deduplicate alerts', 'Route to email / Slack / PagerDuty', 'Manage silences & inhibitions'],
+  },
+  'node-exporter': {
+    id: 'node-exporter', label: 'Node Exporter', sub: 'Host metrics · :9100',
+    icon: <Server className="w-4 h-4" />, image: 'prom/node-exporter:v1.7.0',
+    ports: ['9100'], kind: 'observe',
+    description: 'Prometheus Node Exporter — exposes host-level hardware and OS metrics (CPU, RAM, disk, filesystem, network) for Prometheus scraping.',
+    tech: ['Node Exporter v1.7.0', 'Prometheus exporter'],
+    responsibilities: ['Host CPU & memory metrics', 'Disk & filesystem stats', 'Network interface metrics', 'OS-level system info'],
+  },
+  'kube-state-metrics': {
+    id: 'kube-state-metrics', label: 'kube-state-metrics', sub: 'k8s object metrics',
+    icon: <Layers className="w-4 h-4" />, image: 'registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.12.0',
+    ports: ['8080'], kind: 'observe',
+    description: 'kube-state-metrics — listens to the Kubernetes API and generates metrics about the state of Kubernetes objects (Deployments, Pods, ReplicaSets, etc.) for Prometheus.',
+    tech: ['kube-state-metrics v2.12.0', 'Kubernetes API', 'Prometheus exporter'],
+    responsibilities: ['Pod / Deployment / ReplicaSet metrics', 'Resource request & limit tracking', 'Node conditions', 'Job & CronJob status'],
+  },
+  'api-key-app': {
+    id: 'api-key-app', label: 'api-key-app', sub: 'Go · :8080',
+    icon: <Key className="w-4 h-4" />, image: 'ghcr.io/nteej/dynadoc/api-key-service',
+    ports: ['8080'], kind: 'service',
+    description: 'API Key Service — written in Go for high-throughput key validation. Manages API key lifecycle (create, rotate, revoke) and enforces per-key rate limits using Redis. Kong uses this service as an upstream for machine-to-machine API access, enabling third-party integrations without JWT.',
+    tech: ['Go', 'PostgreSQL', 'Redis (rate limiting)', 'Kong integration'],
+    responsibilities: ['API key generation & rotation', 'Key validation & status checks', 'Per-key rate limiting via Redis', 'Revocation & expiry management', 'Machine-to-machine auth flow'],
+    config: { env: ['DB_HOST=api-key-db', 'DB_PORT=5432', 'REDIS_HOST=redis', 'REDIS_PORT=6379'], network: 'dynadoc-net' },
+  },
+  'api-key-db': {
+    id: 'api-key-db', label: 'api-key-db', sub: 'PostgreSQL 15',
+    icon: <Database className="w-4 h-4" />, image: 'postgres:15',
+    ports: ['5432 (internal)'], kind: 'database',
+    description: 'Dedicated PostgreSQL database for the API Key Service. Stores API key records, hashed key values, rate limit configurations, and usage metadata. Fully isolated from all other service databases.',
+    tech: ['PostgreSQL 15'],
+    responsibilities: ['api_keys table', 'Key hash & metadata', 'Rate limit configuration', 'Usage & audit records'],
+  },
+  'webhook-app': {
+    id: 'webhook-app', label: 'webhook-app', sub: 'Go · :8080',
+    icon: <Router className="w-4 h-4" />, image: 'ghcr.io/nteej/dynadoc/webhook-service',
+    ports: ['8080'], kind: 'service',
+    description: 'Webhook Service — written in Go. Manages webhook endpoint registration and guaranteed event delivery. Consumes domain events from Kafka and delivers them via HTTPS POST to registered URLs with retry logic, exponential backoff, and delivery receipt tracking.',
+    tech: ['Go', 'PostgreSQL', 'Kafka consumer', 'HTTP retry with backoff'],
+    responsibilities: ['Webhook endpoint CRUD', 'Kafka event consumption', 'HTTPS delivery with retry', 'Exponential backoff on failure', 'Delivery receipt & audit log'],
+    topics: ['webhook.events'],
+    config: { env: ['DB_HOST=webhook-db', 'DB_PORT=5432', 'KAFKA_BROKERS=kafka-svc:9092'], network: 'dynadoc-net' },
+  },
+  'webhook-db': {
+    id: 'webhook-db', label: 'webhook-db', sub: 'PostgreSQL 15',
+    icon: <Database className="w-4 h-4" />, image: 'postgres:15',
+    ports: ['5432 (internal)'], kind: 'database',
+    description: 'Dedicated PostgreSQL database for the Webhook Service. Stores registered webhook endpoints, delivery attempts, HTTP response records, and retry state — all fully isolated from other service databases.',
+    tech: ['PostgreSQL 15'],
+    responsibilities: ['webhook_endpoints table', 'delivery_attempts table', 'Retry state & backoff counters', 'HTTP response logs'],
+  },
+  traefik: {
+    id: 'traefik', label: 'Traefik', sub: 'Ingress · TLS · ddoc.fi',
+    icon: <Shield className="w-4 h-4" />, image: 'traefik:v3 (k3s built-in)',
+    ports: ['80 (HTTP)', '443 (HTTPS)'], kind: 'gateway',
+    description: 'Traefik is the Kubernetes ingress controller provided by k3s. Handles TLS termination (Let\'s Encrypt auto-cert) for ddoc.fi, www.ddoc.fi, api.ddoc.fi, and grafana.ddoc.fi. Redirects HTTP → HTTPS and www → apex domain.',
+    tech: ['Traefik v3', 'Let\'s Encrypt (ACME)', 'k3s built-in', 'IngressRoute CRD'],
+    responsibilities: ['TLS termination for *.ddoc.fi', 'Let\'s Encrypt auto-renewal', 'HTTP → HTTPS redirect', 'www.ddoc.fi → ddoc.fi redirect', 'Route /api → Kong, / → frontend', 'grafana.ddoc.fi → Grafana'],
+  },
 };
 
 // ─── Layer definition ─────────────────────────────────────────────────────────
@@ -383,10 +452,10 @@ const LAYERS: Layer[] = [
   },
   {
     id: 'gateway',
-    label: 'API Gateway',
+    label: 'API Gateway & Ingress',
     labelColor: 'bg-[#001f5c]',
-    components: ['kong', 'kong-db-node'],
-    scaleHint: 'Kong scales horizontally behind a load balancer',
+    components: ['traefik', 'kong', 'kong-db-node'],
+    scaleHint: 'Traefik (k3s built-in) handles TLS. Kong scales horizontally behind a load balancer.',
   },
   {
     id: 'proxy',
@@ -398,11 +467,11 @@ const LAYERS: Layer[] = [
   },
   {
     id: 'services',
-    label: 'Microservices  (PHP-FPM :9000)',
+    label: 'Microservices  (PHP-FPM :9000 · Go :8080)',
     labelColor: 'bg-[#2563eb]',
-    components: ['user-app', 'template-app', 'file-app', 'audit-app', 'notification-app'],
+    components: ['user-app', 'template-app', 'file-app', 'audit-app', 'notification-app', 'api-key-app', 'webhook-app'],
     scalable: 'horizontal',
-    scaleHint: 'Each service can scale horizontally — run multiple PHP-FPM containers per service',
+    scaleHint: 'Each service can scale horizontally — run multiple containers per service',
   },
   {
     id: 'workers',
@@ -436,7 +505,7 @@ const LAYERS: Layer[] = [
     scalable: 'vertical',
     scaleHint: 'Each PostgreSQL DB scales vertically (bigger instance) or with read replicas. LocalStack → AWS S3 in production.',
     subgroups: [
-      { label: 'Service Databases  (PostgreSQL 15)', ids: ['user-db', 'template-db', 'file-db', 'audit-db', 'kong-db-node'], note: 'DB per service — fully isolated' },
+      { label: 'Service Databases  (PostgreSQL 15)', ids: ['user-db', 'template-db', 'file-db', 'audit-db', 'api-key-db', 'webhook-db', 'kong-db-node'], note: 'DB per service — fully isolated' },
       { label: 'Other Data Stores', ids: ['redis', 'localstack'] },
     ],
   },
@@ -444,7 +513,7 @@ const LAYERS: Layer[] = [
     id: 'observability',
     label: 'Observability Stack',
     labelColor: 'bg-[#4338ca]',
-    components: ['grafana', 'prometheus', 'loki', 'tempo', 'promtail', 'cadvisor'],
+    components: ['grafana', 'prometheus', 'loki', 'tempo', 'promtail', 'cadvisor', 'alertmanager', 'node-exporter', 'kube-state-metrics'],
     scalable: 'both',
     scaleHint: 'Observability stack scales horizontally (clustered Loki/Tempo) or vertically. Additional exporters can be added per service.',
   },
@@ -491,6 +560,14 @@ const TOPICS = [
     producers: ['user-app'],
     consumers: ['notification-consumer'],
     description: 'Outbound notification requests. Producers publish channel, recipient, template, and data. The notification-consumer routes each message to email, SMS, or Pusher.',
+  },
+  {
+    name: 'webhook.events', partitions: 3, rf: 3,
+    color: 'bg-amber-100 border-amber-400 text-amber-800',
+    dotColor: 'bg-amber-500',
+    producers: ['webhook-app'],
+    consumers: ['audit-consumer'],
+    description: 'Domain events dispatched to registered webhook endpoints. Carries event type, payload, and delivery metadata for retry tracking.',
   },
 ];
 
@@ -2348,6 +2425,9 @@ const ArchitecturePage: React.FC = () => {
                 </span>
               )}
             </button>
+            <Link to="/infrastructure" className="text-sm text-[#003580] hover:text-[#003580]/70 px-2 py-1.5 rounded-lg transition-colors font-medium hidden sm:inline-flex items-center gap-1">
+              Infrastructure
+            </Link>
             <Link to="/login" className="text-sm text-[#003580] hover:text-white hover:bg-[#003580] px-3 py-1.5 rounded-lg border border-[#003580] transition-colors font-medium">
               Sign in →
             </Link>
@@ -2377,9 +2457,9 @@ const ArchitecturePage: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-3 mt-8">
             {[
               { n: Object.keys(ALL).length + ' Components', i: <Box className="w-3.5 h-3.5" /> },
-              { n: '5 Microservices', i: <Layers className="w-3.5 h-3.5" /> },
+              { n: '7 Microservices', i: <Layers className="w-3.5 h-3.5" /> },
               { n: '3 Kafka Brokers', i: <MessageSquare className="w-3.5 h-3.5" /> },
-              { n: '4 Isolated DBs', i: <Database className="w-3.5 h-3.5" /> },
+              { n: '7 Isolated DBs', i: <Database className="w-3.5 h-3.5" /> },
               { n: 'Full Observability', i: <Eye className="w-3.5 h-3.5" /> },
             ].map(b => (
               <span key={b.n} className="inline-flex items-center gap-1.5 bg-white/10 border border-white/20 text-sm px-3 py-1.5 rounded-full">
@@ -2699,6 +2779,70 @@ const ArchitecturePage: React.FC = () => {
         </div>{/* end zoom transform div */}
       </div>{/* end canvas ref div */}
 
+      {/* ── System Enhancements Timeline ────────────────────────────────────── */}
+      <section className="bg-white border-t border-[#003580]/10 px-4 py-14">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-[#003580] text-center mb-2">System Enhancements Timeline</h2>
+          <p className="text-center text-gray-500 text-sm mb-10">Major releases and capabilities added to the platform</p>
+          <div className="relative">
+            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#003580]/15" />
+            {[
+              {
+                version: 'v1.5.0',
+                date: 'Apr 2026',
+                color: 'bg-[#dbeafe] border-[#93c5fd]',
+                dot: 'bg-[#2563eb]',
+                title: 'Core Platform',
+                items: ['5 PHP Laravel microservices (user, template, file, audit, notification)', '3-broker Kafka cluster with ZooKeeper', 'Kong API Gateway + RS256 JWT auth', 'Full observability stack (Grafana, Prometheus, Loki, Tempo)', 'LocalStack S3 for file storage'],
+              },
+              {
+                version: 'v1.6.0',
+                date: 'Apr 2026',
+                color: 'bg-[#e0f2fe] border-[#7dd3fc]',
+                dot: 'bg-[#0369a1]',
+                title: 'File Email & Packages',
+                items: ['Kafka-based file email with PDF attachment', 'Packages subscription system', 'API key gateway authentication', 'File history & profile tabs in frontend'],
+              },
+              {
+                version: 'v1.7.0',
+                date: 'May 2026',
+                color: 'bg-[#f0fdf4] border-[#86efac]',
+                dot: 'bg-[#16a34a]',
+                title: 'UX & Live Preview',
+                items: ['Live PDF preview in document generation', 'Tags & Contexts panel in Generate page', 'Simplified Settings page', 'Frontend Dockerfile optimisation'],
+              },
+              {
+                version: 'v1.8.0',
+                date: 'May 2026',
+                color: 'bg-[#faf5ff] border-[#d8b4fe]',
+                dot: 'bg-[#7c3aed]',
+                title: 'SSO, Payments, API Keys & IaC',
+                items: ['Google OAuth 2.0 + GitHub OAuth (SSO) in user-service', 'Klarna Payments integration (checkout, capture, cancel)', 'API Key Service (Go) for machine-to-machine auth', 'Webhook Service (Go) with Kafka-driven delivery & retry', 'AlertManager, Node Exporter, kube-state-metrics added to observability', 'Kustomize IaC — base + production overlay, pinned image tags', 'Traefik TLS ingress (Let\'s Encrypt) for ddoc.fi', 'CD pipeline with kustomize overlay validation'],
+              },
+            ].map((release, i) => (
+              <div key={release.version} className="relative pl-16 mb-8 last:mb-0">
+                <div className={`absolute left-[18px] top-1 w-4 h-4 rounded-full border-2 border-white shadow ${release.dot}`} />
+                <div className={`border rounded-2xl p-5 ${release.color}`}>
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className="font-mono text-sm font-bold text-[#001f5c]">{release.version}</span>
+                    <span className="text-xs text-gray-400">{release.date}</span>
+                    <span className="ml-auto text-sm font-semibold text-[#003580]">{release.title}</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {release.items.map(item => (
+                      <li key={item} className="flex items-start gap-2 text-sm text-gray-600">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#003580]/60 mt-0.5 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Architecture principles ─────────────────────────────────────────── */}
       <section className="bg-[#f0f5ff] border-t border-[#003580]/10 px-4 py-14">
         <div className="max-w-5xl mx-auto">
@@ -2712,6 +2856,7 @@ const ArchitecturePage: React.FC = () => {
               { icon: <ChevronsRight />, title: 'Horizontal Scalability', desc: 'Services, Nginx proxies, Kafka brokers, and workers all scale horizontally by adding more instances without architecture changes.', badge: 'Scalability' },
               { icon: <Eye />, title: 'Full Observability', desc: 'OTel auto-instrumentation in every Laravel service. Traces, metrics, and logs flow into Grafana — every request is visible end-to-end.', badge: 'Visibility' },
               { icon: <Cloud />, title: 'Cloud-Portable Storage', desc: 'LocalStack in dev, AWS S3 in production — same AWS SDK. Zero code change between environments.', badge: 'Portability' },
+              { icon: <Package />, title: 'Infrastructure as Code', desc: 'Kubernetes manifests managed with Kustomize — base + production overlay. Image tags pinned per release, validated in CI, and applied atomically via kubectl.', badge: 'IaC' },
             ].map(p => (
               <div key={p.title} className="bg-white border border-[#003580]/15 rounded-2xl p-5 hover:border-[#003580]/40 hover:shadow-md transition-all">
                 <div className="flex items-center justify-between mb-3">

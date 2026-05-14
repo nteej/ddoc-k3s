@@ -20,6 +20,7 @@ import GeneratePage from "@/components/GeneratePage";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import ArchitecturePage from "./pages/ArchitecturePage";
+import InfrastructurePage from "./pages/InfrastructurePage";
 import OrganizationPage from "./pages/OrganizationPage";
 import InvitationPage from "./pages/InvitationPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/" element={<LandingPage />} />
             <Route path="/architecture" element={<ArchitecturePage />} />
+            <Route path="/infrastructure" element={<InfrastructurePage />} />
             <Route path="/documents" element={
               <ProtectedLayout>
                 <DocumentsPage />
