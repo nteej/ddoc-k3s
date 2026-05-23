@@ -49,6 +49,8 @@ final readonly class FileGenerationHandler
 
                     $htmlContent = FileTagsReplacementService::replace($input->sections, $payloadArray);
 
+                    $genStart = microtime(true);
+
                     $uniqidFileName = $this->fileGeneration->generate(
                         $input->template->name,
                         $htmlContent,
@@ -57,6 +59,8 @@ final readonly class FileGenerationHandler
                     );
 
                     $path = $this->fileStorage->upload($uniqidFileName);
+
+                    $this->pushPdfMetric(microtime(true) - $genStart);
 
                     $this->setSuccessFileUploaded($file, $path);
                 }, self::TRANSACTION_ATTEMPTS);
@@ -138,6 +142,24 @@ final readonly class FileGenerationHandler
                 'organizationId' => $file->organizationId,
                 'userId'         => $file->userId ?? null,
             ], $payload));
+        } catch (\Throwable) {}
+    }
+
+    private function pushPdfMetric(float $duration): void
+    {
+        try {
+            $url  = env('PUSHGATEWAY_URL', 'http://pushgateway-svc.observability.svc.cluster.local:9091');
+            $body = "# TYPE pdf_generation_duration_seconds gauge\npdf_generation_duration_seconds {$duration}\n";
+            $ch   = curl_init("{$url}/metrics/job/pdf_generation/instance/file-service");
+            curl_setopt_array($ch, [
+                CURLOPT_POSTFIELDS     => $body,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST  => 'POST',
+                CURLOPT_TIMEOUT        => 2,
+                CURLOPT_HTTPHEADER     => ['Content-Type: text/plain'],
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
         } catch (\Throwable) {}
     }
 }

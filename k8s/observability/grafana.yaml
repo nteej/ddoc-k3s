@@ -76,6 +76,8 @@ spec:
               mountPath: /etc/grafana/dashboards/kubernetes
             - name: dashboard-dynadoc
               mountPath: /etc/grafana/dashboards/dynadoc
+            - name: dashboard-infra
+              mountPath: /etc/grafana/dashboards/infra
             - name: grafana-data
               mountPath: /var/lib/grafana
       volumes:
@@ -94,6 +96,9 @@ spec:
         - name: dashboard-dynadoc
           configMap:
             name: grafana-dashboard-dynadoc-cm
+        - name: dashboard-infra
+          configMap:
+            name: grafana-dashboard-infra-cm
         - name: grafana-data
           persistentVolumeClaim:
             claimName: grafana-pvc

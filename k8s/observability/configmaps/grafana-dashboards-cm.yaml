@@ -40,3 +40,14 @@ data:
         allowUiUpdates: true
         options:
           path: /etc/grafana/dashboards/dynadoc
+
+      - name: DynaDoc Infrastructure
+        folder: "System & Infrastructure"
+        folderUid: system-infra
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/dashboards/infra

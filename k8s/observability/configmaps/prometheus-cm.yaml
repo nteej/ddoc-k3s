@@ -37,6 +37,13 @@ data:
         static_configs:
           - targets: ['cadvisor-svc.observability.svc.cluster.local:8080']
         metric_relabel_configs:
+          # Map k8s container labels to standard label names expected by dashboards
+          - source_labels: [container_label_io_kubernetes_pod_namespace]
+            target_label: namespace
+          - source_labels: [container_label_io_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [container_label_io_kubernetes_container_name]
+            target_label: container
           # Drop high-cardinality container-level metrics we don't need
           - source_labels: [__name__]
             regex: container_(network_tcp_usage_total|tasks_state|memory_failures_total)
@@ -104,3 +111,9 @@ data:
             target_label: pod
           - source_labels: [__meta_kubernetes_pod_label_app]
             target_label: app
+
+      # ── Pushgateway — push-based metrics (e.g. PDF generation time) ──────
+      - job_name: pushgateway
+        honor_labels: true
+        static_configs:
+          - targets: ['pushgateway-svc.observability.svc.cluster.local:9091']

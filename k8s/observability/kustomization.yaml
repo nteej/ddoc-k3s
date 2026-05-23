@@ -10,4 +10,5 @@ resources:
   - node-exporter.yaml
   - prometheus.yaml
   - promtail.yaml
+  - pushgateway.yaml
   - tempo.yaml

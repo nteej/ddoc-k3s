@@ -150,4 +150,11 @@ data:
         }
       }"
 
+    curl -s -X POST "$KONG_ADMIN/plugins" \
+      --data "name=prometheus" \
+      --data "config.status_code_metrics=true" \
+      --data "config.latency_metrics=true" \
+      --data "config.bandwidth_metrics=true" \
+      --data "config.upstream_health_metrics=true"
+
     echo "Kong configuration finished!"

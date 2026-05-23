@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - alertmanager-cm.yaml
   - grafana-dashboard-dynadoc.yaml
+  - grafana-dashboard-infra.yaml
   - grafana-dashboard-k8s.yaml
   - grafana-dashboard-system.yaml
   - grafana-dashboards-cm.yaml

@@ -32,6 +32,20 @@ test-file:  ## Test file-service
 test-audit:  ## Test audit-service
 	cd backend/audit-service && php artisan test --parallel
 
+# ─── API Tests (k6) ───────────────────────────────────────────────────────────
+
+.PHONY: test-smoke
+test-smoke:  ## Smoke test: verify all services reachable (~30s). Override: BASE_URL=... TEST_EMAIL=... TEST_PASSWORD=...
+	./tests/run.sh smoke
+
+.PHONY: test-regression
+test-regression:  ## Regression test: full CRUD coverage, auto-cleanup (~3min). Requires TEST_EMAIL + TEST_PASSWORD with admin role.
+	./tests/run.sh regression
+
+.PHONY: test-load
+test-load:  ## Load test: 25 VUs, 7 min read+write. WARNING: targets BASE_URL (default: production). Use BASE_URL=staging to redirect.
+	./tests/run.sh load
+
 .PHONY: lint
 lint:  ## Lint frontend (eslint)
 	cd frontend && npm run lint

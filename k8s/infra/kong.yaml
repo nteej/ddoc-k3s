@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: kong
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8001"
+        prometheus.io/path:   "/metrics"
     spec:
       # Wait for kong-db to be ready before running migrations
       initContainers:

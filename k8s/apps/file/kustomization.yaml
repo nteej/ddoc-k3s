@@ -4,4 +4,5 @@ resources:
   - file-app.yaml
   - file-consumer.yaml
   - file-db.yaml
+  - file-generation-handler-cm.yaml
   - file-queue.yaml
