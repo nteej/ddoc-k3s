@@ -34,7 +34,10 @@
     "signUp": "Rekisteröidy",
     "emailRequired": "Sähköposti vaaditaan.",
     "emailInvalid": "Virheellinen sähköposti",
-    "passwordRequired": "Salasana vaaditaan"
+    "passwordRequired": "Salasana vaaditaan",
+    "orContinueWith": "tai jatka käyttämällä",
+    "ssoSignIn": "Kirjaudu SSO:lla",
+    "ssoError": "SSO-kirjautuminen epäonnistui. Yritä uudelleen."
   },
   "signup": {
     "title": "Luo tili",
@@ -506,6 +509,7 @@
     "imageUrlPrompt": "Syötä kuvan URL:",
     "linkUrlPrompt": "Syötä linkin URL:",
     "tableHeader": "Otsikko",
-    "tableCell": "Solu"
+    "tableCell": "Solu",
+    "createNewTag": "Luo uusi tunniste"
   }
 }

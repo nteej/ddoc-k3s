@@ -16,6 +16,7 @@ use App\Infrastructure\Http\Requests\StoreAuthRequest;
 use App\Infrastructure\Http\Requests\StoreRegisterRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends BaseController
 {
@@ -65,8 +66,23 @@ class AuthController extends BaseController
         ]);
     }
 
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
+        // If this session originated from the SSO flow, revoke the linked Passport token
+        // so it cannot be used for introspection calls after logout.
+        $rawToken = $request->cookie('token');
+        if ($rawToken) {
+            $parts = explode('.', $rawToken);
+            if (count($parts) === 3) {
+                $claims = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+                $jti    = $claims['passport_jti'] ?? null;
+                if ($jti) {
+                    DB::table('oauth_access_tokens')->where('id', $jti)->update(['revoked' => true]);
+                    DB::table('oauth_refresh_tokens')->where('access_token_id', $jti)->update(['revoked' => true]);
+                }
+            }
+        }
+
         return response()
             ->json(['message' => 'Logged out'])
             ->cookie('token', '', -1);

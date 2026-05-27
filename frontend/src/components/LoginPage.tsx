@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
 import LogoMark from '@/components/LogoMark';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
+import api from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
 
 const LoginPage: React.FC = () => {
   const { login, isAuthenticated, isLoading } = useAuth();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -22,6 +25,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSsoLoading, setIsSsoLoading] = useState(false);
 
   if (isAuthenticated && !isLoading) {
     return <Navigate to="/documents" replace />;
@@ -53,6 +57,19 @@ const LoginPage: React.FC = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleSsoLogin = async () => {
+    setIsSsoLoading(true);
+    try {
+      const { url, state, signed_state } = await api.getSsoLink();
+      sessionStorage.setItem('sso_state', state);
+      sessionStorage.setItem('sso_signed_state', signed_state);
+      window.location.href = url;
+    } catch {
+      toast({ title: t('login.ssoError'), variant: 'destructive' });
+      setIsSsoLoading(false);
     }
   };
 
@@ -177,9 +194,24 @@ const LoginPage: React.FC = () => {
                   <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">or continue with</span>
+                  <span className="bg-background px-2 text-muted-foreground">{t('login.orContinueWith')}</span>
                 </div>
               </div>
+
+              {/* Enterprise SSO */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                onClick={handleSsoLogin}
+                disabled={isSsoLoading}
+              >
+                {isSsoLoading
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <ShieldCheck className="w-4 h-4 text-blue-700" />
+                }
+                <span className="text-blue-900 font-medium">{t('login.ssoSignIn')}</span>
+              </Button>
 
               <div className="grid grid-cols-2 gap-3">
                 <a

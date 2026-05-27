@@ -34,7 +34,10 @@
     "signUp": "Registrera dig",
     "emailRequired": "E-post krävs.",
     "emailInvalid": "Ogiltig e-post",
-    "passwordRequired": "Lösenord krävs"
+    "passwordRequired": "Lösenord krävs",
+    "orContinueWith": "eller fortsätt med",
+    "ssoSignIn": "Logga in med SSO",
+    "ssoError": "SSO-inloggning misslyckades. Försök igen."
   },
   "signup": {
     "title": "Skapa konto",
@@ -506,6 +509,7 @@
     "imageUrlPrompt": "Ange bildens URL:",
     "linkUrlPrompt": "Ange länkens URL:",
     "tableHeader": "Rubrik",
-    "tableCell": "Cell"
+    "tableCell": "Cell",
+    "createNewTag": "Skapa ny tagg"
   }
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Plus, FileText, ChevronDown, ChevronUp, Edit, Trash2, Upload, Loader2, Search, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Template, Section, Tag, CreateTemplateData, CreateSectionData, TemplatesResponse } from '@/types';
+import { Template, Section, Tag, Context, CreateTemplateData, CreateSectionData, TemplatesResponse } from '@/types';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +32,7 @@ const DocumentsPage: React.FC = () => {
     totalPages: 0
   });
   const [tags, setTags] = useState<Tag[]>([]);
+  const [contexts, setContexts] = useState<Context[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +68,7 @@ const DocumentsPage: React.FC = () => {
   useEffect(() => {
     loadTemplates();
     loadTags();
+    loadContexts();
   }, [user, currentPage, searchQuery]);
 
   const loadTemplates = async () => {
@@ -105,6 +107,16 @@ const DocumentsPage: React.FC = () => {
     }
   };
 
+  const loadContexts = async () => {
+    if (!user) return;
+    try {
+      const data = await api.getContexts();
+      setContexts(data);
+    } catch (error) {
+      console.error('Error loading contexts:', error);
+    }
+  };
+
   const loadSections = async (templateId: string) => {
     try {
       setSectionsLoading(true);
@@ -140,7 +152,7 @@ const DocumentsPage: React.FC = () => {
     setSections(updatedSections);
 
     try {
-      await api.updateSectionOrder(selectedTemplate.id, updatedSections.map(s => ({ id: s.id, sectionOrder: s.sectionOrder })));
+      await api.updateSectionOrder(updatedSections.map(s => ({ id: s.id, sectionOrder: s.sectionOrder })));
       toast({
         title: t('documents.orderUpdated'),
         description: t('documents.orderUpdatedDesc'),
@@ -703,6 +715,8 @@ const DocumentsPage: React.FC = () => {
                     htmlContent
                   }))}
                   tags={tags}
+                  contexts={contexts}
+                  onTagCreated={loadTags}
                   placeholder={t('documents.sectionContentPlaceholder')}
                 />
               </div>
@@ -844,6 +858,8 @@ const DocumentsPage: React.FC = () => {
                     htmlContent
                   }))}
                   tags={tags}
+                  contexts={contexts}
+                  onTagCreated={loadTags}
                 />
               </div>
               <div className="flex justify-end space-x-2">

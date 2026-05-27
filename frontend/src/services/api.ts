@@ -292,6 +292,19 @@ const api = {
     return apiResponse.data;
   },
 
+  async updateSectionOrder(sections: { id: string; sectionOrder: number }[]): Promise<void> {
+    await Promise.all(sections.map(({ id, sectionOrder }) =>
+      fetch(`${BASE_URL}/sections/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionOrder })
+      }).then(response => {
+        if (!response.ok) throw new Error('Erro ao reordenar seção');
+      })
+    ));
+  },
+
   async deleteSection(id: string): Promise<void> {
     const response = await fetch(`${BASE_URL}/sections/${id}`, {
       method: 'DELETE',
@@ -375,7 +388,7 @@ const api = {
     }
     
     const apiResponse = await response.json();
-    return apiResponse.data;
+    return apiResponse.data.map((tag: any) => ({ ...tag, type: String(tag.type) }));
   },
 
   async createTag(data: CreateTagData): Promise<string> {
@@ -383,7 +396,7 @@ const api = {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, type: Number(data.type) })
     });
 
     if (!response.ok) {
@@ -399,7 +412,7 @@ const api = {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, type: Number(data.type) })
     });
 
     if (!response.ok) {
@@ -888,6 +901,34 @@ const api = {
     }
     const { data } = await res.json();
     return data.request;
+  },
+
+  // ── SSO (OAuth2 Authorization Code flow) ────────────────────────────────────
+
+  async getSsoLink(): Promise<{ url: string; state: string; signed_state: string }> {
+    const res = await fetch(`${BASE_URL}/auth/sso-link`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to get SSO link');
+    return res.json();
+  },
+
+  async exchangeSsoCode(params: {
+    code: string;
+    state: string;
+    signedState: string;
+  }): Promise<User> {
+    const res = await fetch(`${BASE_URL}/auth/sso-exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        code:         params.code,
+        state:        params.state,
+        signed_state: params.signedState,
+      }),
+    });
+    if (!res.ok) throw new Error('SSO exchange failed');
+    const { data } = await res.json();
+    return { id: data.id, name: data.name, email: data.email, role: data.role, avatar: undefined };
   },
 
   async getKlarnaSettings(): Promise<KlarnaSettings> {

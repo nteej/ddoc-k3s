@@ -11,15 +11,21 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $userId = Str::orderedUuid()->toString();
-        $companyId = Str::orderedUuid()->toString();
-        $orgId = Str::orderedUuid()->toString();
-        $now = now();
+        $this->seedAdminUser();
+        $this->call(PassportClientSeeder::class);
+    }
 
+    private function seedAdminUser(): void
+    {
         if (DB::table('users')->where('email', 'admin@example.com')->exists()) {
             $this->command->info('Admin user already exists, skipping.');
             return;
         }
+
+        $userId    = Str::orderedUuid()->toString();
+        $companyId = Str::orderedUuid()->toString();
+        $orgId     = Str::orderedUuid()->toString();
+        $now       = now();
 
         DB::table('users')->insert([
             'id'                      => $userId,

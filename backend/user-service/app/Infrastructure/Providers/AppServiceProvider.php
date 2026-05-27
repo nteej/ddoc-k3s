@@ -15,6 +15,7 @@ use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Repositories\WebhookRepository;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,5 +44,11 @@ class AppServiceProvider extends ServiceProvider
             UserLoggedIn::class,
             PublishUserLoginToKafka::class,
         );
+
+        // Passport OAuth2 server configuration
+        Passport::useUuidIds();
+        Passport::tokensExpireIn(now()->addHours(24));
+        Passport::refreshTokensExpireIn(now()->addDays(30));
+        Passport::personalAccessTokensExpireIn(now()->addMonths(6));
     }
 }

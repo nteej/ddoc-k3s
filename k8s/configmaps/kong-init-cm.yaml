@@ -37,7 +37,18 @@ data:
       --data 'paths[]=/api/auth/forgot-password' \
       --data 'paths[]=/api/auth/reset-password' \
       --data 'paths[]=/api/auth/sso' \
+      --data 'paths[]=/api/auth/sso-link' \
+      --data 'paths[]=/api/auth/sso-exchange' \
+      --data 'paths[]=/api/oauth/introspect' \
       --data 'paths[]=/api/health' \
+      --data 'strip_path=false'
+
+    # Passport OAuth2 authorization flow — browser-facing, no JWT required.
+    # /oauth/authorize and /oauth/token use their own auth (web session + client credentials).
+    # /login is the Blade login page for the Passport authorization flow.
+    curl -s -X POST "$KONG_ADMIN/services/user-service/routes" \
+      --data 'paths[]=/oauth' \
+      --data 'paths[]=/login' \
       --data 'strip_path=false'
 
     # JWT-protected user-service routes

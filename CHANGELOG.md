@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 
 
+## [v2.0.0] - 2026-05-28
+
+### Breaking Changes
+
+- Enterprise SSO now uses OAuth2 Authorization Code Grant (Laravel Passport). Existing sessions remain valid; new logins through the SSO button go through the new flow.
+
+### Features
+
+- **Enterprise Single Sign-On (SSO)**: Full OAuth2 Authorization Code Grant flow via Laravel Passport. Users can authenticate through the centralized DynaDoc Auth Server and receive a short-lived JWT with organization and role context.
+- **Token introspection endpoint** (`POST /api/oauth/introspect`): Downstream services validate Passport Bearer tokens and receive enriched claims (userId, organizationId, role) without decoding the JWT themselves.
+- **BFF OAuth2 exchange**: Stateless HMAC-signed state for CSRF protection — no server-side session required for the callback flow.
+- **Token revocation on logout**: Logout now revokes the underlying Passport token via the `passport_jti` claim embedded in the session JWT.
+- **Auto-consent Blade view**: First-party OAuth2 clients are approved automatically — no manual consent click required.
+- **SSO login button**: Frontend login page now includes an "Enterprise SSO" button with full i18n support (EN/FI/SV).
+- **Downstream middleware upgrade**: `template-service`, `file-service`, and `audit-service` middleware detect token type by `iss` claim and call introspect for Passport Bearer tokens transparently.
+- **Kong routing**: `/oauth`, `/login`, and `/api/oauth/introspect` paths registered as public (no JWT plugin) to support the Passport authorization flow.
+
+
 ## [v1.8.0] - 2026-05-14
 
 

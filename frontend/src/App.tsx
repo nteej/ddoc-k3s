@@ -25,6 +25,7 @@ import OrganizationPage from "./pages/OrganizationPage";
 import InvitationPage from "./pages/InvitationPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import WebhooksPage from "./pages/WebhooksPage";
+import SsoCallbackPage from "./pages/SsoCallbackPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth/callback" element={<SsoCallbackPage />} />
             <Route path="/" element={<LandingPage />} />
             <Route path="/architecture" element={<ArchitecturePage />} />
             <Route path="/infrastructure" element={<InfrastructurePage />} />

@@ -34,7 +34,10 @@
     "signUp": "Sign up",
     "emailRequired": "Email is required.",
     "emailInvalid": "Email invalid",
-    "passwordRequired": "Password is required"
+    "passwordRequired": "Password is required",
+    "orContinueWith": "or continue with",
+    "ssoSignIn": "Sign in with SSO",
+    "ssoError": "SSO login failed. Please try again."
   },
   "signup": {
     "title": "Create account",
@@ -506,6 +509,7 @@
     "imageUrlPrompt": "Enter the image URL:",
     "linkUrlPrompt": "Enter the link URL:",
     "tableHeader": "Header",
-    "tableCell": "Cell"
+    "tableCell": "Cell",
+    "createNewTag": "Create new tag"
   }
 }

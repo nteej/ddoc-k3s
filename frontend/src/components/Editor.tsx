@@ -20,14 +20,15 @@ import {
   Search, Quote, Link as LinkIcon, Code, Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon, IndentIncrease, IndentDecrease,
   Undo, Redo, Highlighter, Minus, PenLine, FileText,
-  RowsIcon, Columns, Trash2,
+  RowsIcon, Columns, Trash2, Plus, X, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tag } from '@/types';
+import { Tag, Context, CreateTagData, TagType } from '@/types';
+import api from '@/services/api';
 import { useTranslation } from 'react-i18next';
 
 // ── Custom extensions ────────────────────────────────────────────────────────
@@ -119,6 +120,8 @@ interface EditorProps {
   onChange: (htmlContent: string) => void;
   tags: Tag[];
   placeholder?: string;
+  contexts?: Context[];
+  onTagCreated?: () => void;
 }
 
 const FONT_SIZES = ['8pt','9pt','10pt','11pt','12pt','14pt','16pt','18pt','20pt','24pt','28pt','36pt','48pt','72pt'];
@@ -129,13 +132,19 @@ const COLORS = [
   '#7C3AED','#DB2777','#BE185D','#166534','#1E3A5F','#78350F','#7F1D1D',
 ];
 
-const Editor: React.FC<EditorProps> = ({ htmlContent, onChange, tags, placeholder }) => {
+const emptyTagForm = (): CreateTagData => ({ name: '', type: '1', description: '', contextId: '', options: [] });
+
+const Editor: React.FC<EditorProps> = ({ htmlContent, onChange, tags, placeholder, contexts = [], onTagCreated }) => {
   const { t } = useTranslation();
   const [showTagMenu, setShowTagMenu] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [showCreateTag, setShowCreateTag] = useState(false);
+  const [createTagForm, setCreateTagForm] = useState<CreateTagData>(emptyTagForm());
+  const [creatingTag, setCreatingTag] = useState(false);
+  const [newTagOption, setNewTagOption] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -180,6 +189,23 @@ const Editor: React.FC<EditorProps> = ({ htmlContent, onChange, tags, placeholde
     (cmd() as any).insertTag(tag.name).run();
     setShowTagMenu(false);
     setTagSearchQuery('');
+  };
+
+  const handleCreateTag = async () => {
+    if (!createTagForm.name.trim() || !createTagForm.contextId) return;
+    const normalizedName = createTagForm.name.toUpperCase().replace(/\s+/g, '_');
+    setCreatingTag(true);
+    try {
+      await api.createTag({ ...createTagForm, name: normalizedName });
+      onTagCreated?.();
+      (cmd() as any).insertTag(normalizedName).run();
+      setCreateTagForm(emptyTagForm());
+      setShowCreateTag(false);
+      setShowTagMenu(false);
+      setTagSearchQuery('');
+    } finally {
+      setCreatingTag(false);
+    }
   };
 
   const insertLink = () => {
@@ -456,37 +482,166 @@ const Editor: React.FC<EditorProps> = ({ htmlContent, onChange, tags, placeholde
 
         {/* Dynamic tag insertion */}
         <div className="relative">
-          <Button variant="ghost" size="sm" onClick={() => setShowTagMenu(!showTagMenu)} className="h-8 px-2 text-xs gap-1" title={t('editor.insertTags')}>
+          <Button variant="ghost" size="sm" onClick={() => { setShowTagMenu(!showTagMenu); setShowCreateTag(false); }} className="h-8 px-2 text-xs gap-1" title={t('editor.insertTags')}>
             <Type className="w-3.5 h-3.5" />
             {t('editor.insertTags')}
           </Button>
           {showTagMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl z-50 min-w-80 max-h-96 overflow-hidden flex flex-col">
-              <div className="p-3 border-b border-gray-200 bg-gray-50">
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <Input type="text" placeholder={t('editor.searchTags')} value={tagSearchQuery} onChange={e => setTagSearchQuery(e.target.value)} className="pl-10 h-8 text-sm" />
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {Object.keys(groupedTags).length > 0 ? (
-                  Object.entries(groupedTags).map(([ctx, ctxTags]) => (
-                    <div key={ctx}>
-                      <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 font-semibold text-xs text-gray-700 uppercase tracking-wide">{ctx}</div>
-                      {ctxTags.map(tag => (
-                        <button key={tag.id} onClick={() => insertTag(tag)} className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">
-                          <div className="font-medium text-gray-800">#{tag.name}#</div>
-                          <div className="text-xs text-gray-500">{tag.description}</div>
-                        </button>
-                      ))}
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl z-50 min-w-80 max-h-[32rem] overflow-hidden flex flex-col">
+              {!showCreateTag ? (
+                <>
+                  <div className="p-3 border-b border-gray-200 bg-gray-50">
+                    <div className="relative">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Input type="text" placeholder={t('editor.searchTags')} value={tagSearchQuery} onChange={e => setTagSearchQuery(e.target.value)} className="pl-10 h-8 text-sm" />
                     </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-3 text-sm text-gray-500">
-                    {tagSearchQuery ? t('editor.noTagsFound') : t('editor.noTagsRegistered')}
                   </div>
-                )}
-              </div>
+                  <div className="flex-1 overflow-y-auto">
+                    {Object.keys(groupedTags).length > 0 ? (
+                      Object.entries(groupedTags).map(([ctx, ctxTags]) => (
+                        <div key={ctx}>
+                          <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 font-semibold text-xs text-gray-700 uppercase tracking-wide">{ctx}</div>
+                          {ctxTags.map(tag => (
+                            <button key={tag.id} onClick={() => insertTag(tag)} className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm">
+                              <div className="font-medium text-gray-800">#{tag.name}#</div>
+                              <div className="text-xs text-gray-500">{tag.description}</div>
+                            </button>
+                          ))}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        {tagSearchQuery ? t('editor.noTagsFound') : t('editor.noTagsRegistered')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="border-t border-gray-200 p-2 bg-gray-50">
+                    <button onClick={() => { setShowCreateTag(true); setCreateTagForm(emptyTagForm()); }} className="flex items-center gap-1.5 w-full px-3 py-1.5 text-xs text-blue-700 hover:bg-blue-50 rounded transition-colors">
+                      <Plus className="w-3.5 h-3.5" />
+                      {t('editor.createNewTag')}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
+                    <span className="text-xs font-semibold text-gray-700">{t('editor.createNewTag')}</span>
+                    <button onClick={() => setShowCreateTag(false)} className="text-gray-400 hover:text-gray-600"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                  <div className="p-3 space-y-2.5 overflow-y-auto max-h-80">
+                    {/* Context */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">{t('settings.contextLabel')}</label>
+                      <Select value={createTagForm.contextId} onValueChange={v => setCreateTagForm(p => ({ ...p, contextId: v }))}>
+                        <SelectTrigger className="h-8 text-xs border-gray-200 bg-gray-50"><SelectValue placeholder={t('settings.selectContext')} /></SelectTrigger>
+                        <SelectContent>
+                          {contexts.map(c => <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Name */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">{t('settings.tagName')}</label>
+                      <Input
+                        placeholder={t('settings.tagNamePlaceholder')}
+                        value={createTagForm.name}
+                        onChange={e => setCreateTagForm(p => ({ ...p, name: e.target.value }))}
+                        className="h-8 text-xs border-gray-200 bg-gray-50"
+                      />
+                      {createTagForm.name.trim() && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">→ <code>#{createTagForm.name.toUpperCase().replace(/\s+/g, '_')}#</code></p>
+                      )}
+                    </div>
+                    {/* Type */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">{t('settings.fieldType')}</label>
+                      <Select value={createTagForm.type} onValueChange={v => setCreateTagForm(p => ({ ...p, type: v as TagType, options: [] }))}>
+                        <SelectTrigger className="h-8 text-xs border-gray-200 bg-gray-50"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1" className="text-xs">{t('settings.typeText')}</SelectItem>
+                          <SelectItem value="2" className="text-xs">{t('settings.typeNumber')}</SelectItem>
+                          <SelectItem value="3" className="text-xs">{t('settings.typeDate')}</SelectItem>
+                          <SelectItem value="4" className="text-xs">{t('settings.typeSelect')}</SelectItem>
+                          <SelectItem value="5" className="text-xs">{t('settings.typeEmail')}</SelectItem>
+                          <SelectItem value="6" className="text-xs">{t('settings.typeLongText')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {/* Options — only for Select type */}
+                    {createTagForm.type === '4' && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 block mb-1">{t('settings.optionsLabel')}</label>
+                        <div className="flex gap-1.5">
+                          <Input
+                            placeholder={t('settings.addOptionPlaceholder')}
+                            value={newTagOption}
+                            onChange={e => setNewTagOption(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const v = newTagOption.trim();
+                                if (v && !(createTagForm.options ?? []).includes(v)) {
+                                  setCreateTagForm(p => ({ ...p, options: [...(p.options ?? []), v] }));
+                                  setNewTagOption('');
+                                }
+                              }
+                            }}
+                            className="h-7 text-xs border-gray-200 bg-gray-50 flex-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const v = newTagOption.trim();
+                              if (v && !(createTagForm.options ?? []).includes(v)) {
+                                setCreateTagForm(p => ({ ...p, options: [...(p.options ?? []), v] }));
+                                setNewTagOption('');
+                              }
+                            }}
+                            className="h-7 px-2 border border-gray-200 rounded text-gray-600 hover:bg-gray-100 text-xs"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                        {(createTagForm.options ?? []).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {(createTagForm.options ?? []).map((opt, i) => (
+                              <span key={i} className="flex items-center gap-1 text-[10px] bg-gray-100 rounded-full px-2 py-0.5">
+                                {opt}
+                                <button type="button" onClick={() => setCreateTagForm(p => ({ ...p, options: (p.options ?? []).filter((_, j) => j !== i) }))} className="text-gray-400 hover:text-red-400">
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Description */}
+                    <div>
+                      <label className="text-xs font-medium text-gray-600 block mb-1">{t('documents.description')} <span className="text-gray-400 font-normal">(optional)</span></label>
+                      <Input
+                        placeholder={t('documents.descriptionPlaceholder')}
+                        value={createTagForm.description}
+                        onChange={e => setCreateTagForm(p => ({ ...p, description: e.target.value }))}
+                        className="h-8 text-xs border-gray-200 bg-gray-50"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 p-3 border-t border-gray-200 bg-gray-50">
+                    <button onClick={() => setShowCreateTag(false)} className="flex-1 h-7 text-xs border border-gray-200 rounded hover:bg-gray-100 text-gray-600">
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      onClick={handleCreateTag}
+                      disabled={creatingTag || !createTagForm.name.trim() || !createTagForm.contextId || (createTagForm.type === '4' && !(createTagForm.options ?? []).length)}
+                      className="flex-1 h-7 text-xs bg-blue-900 text-white rounded hover:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                    >
+                      {creatingTag ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                      {t('settings.createTag')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

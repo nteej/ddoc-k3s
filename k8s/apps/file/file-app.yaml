@@ -93,6 +93,13 @@ spec:
               value: baggage,tracecontext
             - name: OTEL_TRACES_EXPORTER
               value: otlp
+            - name: USER_SERVICE_URL
+              value: "http://user-svc.dynadoc.svc.cluster.local:80"
+            - name: INTROSPECT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: introspect-secret
+                  key: INTROSPECT_SECRET
           volumeMounts:
             - name: public-files
               mountPath: /var/www/html/public

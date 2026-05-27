@@ -6,6 +6,7 @@ use App\Infrastructure\Http\Controllers\HealthController;
 use App\Infrastructure\Http\Controllers\KlarnaController;
 use App\Infrastructure\Http\Controllers\KlarnaSettingsController;
 use App\Infrastructure\Http\Controllers\NotificationController;
+use App\Infrastructure\Http\Controllers\OAuthController;
 use App\Infrastructure\Http\Controllers\OrganizationController;
 use App\Infrastructure\Http\Controllers\PackageController;
 use App\Infrastructure\Http\Controllers\PackageUpgradeController;
@@ -24,11 +25,18 @@ Route::prefix('auth')->controller(AuthController::class)->group(function () {
     Route::get('/me', 'me')->middleware('jwt.auth');
 });
 
-// SSO — public routes
+// Social login (Google, GitHub) — public
 Route::prefix('auth/sso')->controller(SsoController::class)->group(function () {
     Route::get('/{provider}', 'redirect');
     Route::get('/{provider}/callback', 'callback');
 });
+
+// OAuth2 SSO BFF — public (state verified via HMAC, no session required)
+Route::get('/auth/sso-link',      [OAuthController::class, 'link']);
+Route::post('/auth/sso-exchange', [OAuthController::class, 'exchange']);
+
+// Token introspection — internal only, authenticated via X-Introspect-Secret header
+Route::post('/oauth/introspect',  [OAuthController::class, 'introspect']);
 
 // Invitations — token lookup is public, accept requires an existing account
 Route::get('/invitations/{token}', [OrganizationController::class, 'showInvitation']);
