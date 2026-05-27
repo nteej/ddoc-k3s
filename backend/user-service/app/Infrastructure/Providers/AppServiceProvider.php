@@ -46,7 +46,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         // Passport OAuth2 server configuration
-        Passport::useUuidIds();
+        // useUuidIds() removed in Passport 12 — UUID support is automatic via HasUuids on the User model
         Passport::tokensExpireIn(now()->addHours(24));
         Passport::refreshTokensExpireIn(now()->addDays(30));
         Passport::personalAccessTokensExpireIn(now()->addMonths(6));
