@@ -18,7 +18,8 @@ WORKDIR /var/www/html
 COPY . .
 
 # Bake vendor/ into the image so k8s pods don't run composer install at runtime
-RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-interaction --prefer-dist --optimize-autoloader
+# composer update regenerates the lock file (needed when composer.json is edited directly)
+RUN COMPOSER_MEMORY_LIMIT=-1 composer update --no-interaction --prefer-dist --optimize-autoloader
 
 RUN chown -R www-data:www-data /var/www/html
 
