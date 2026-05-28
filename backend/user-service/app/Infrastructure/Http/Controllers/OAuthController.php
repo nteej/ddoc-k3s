@@ -25,7 +25,9 @@ class OAuthController extends BaseController
         $state       = Str::random(40);
         $signedState = hash_hmac('sha256', $state, config('app.key'));
 
-        $authorizeBase = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
+        // Use FRONTEND_URL as the authorize base — both the React SPA and the Passport
+        // /oauth/* endpoints are served at the same public domain (ddoc.fi) through Kong.
+        $authorizeBase = rtrim(env('FRONTEND_URL', env('APP_URL', 'http://localhost:8000')), '/');
 
         $query = http_build_query([
             'client_id'     => config('sso.client_id'),
