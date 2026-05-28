@@ -69,9 +69,9 @@ const ALL: Record<string, Comp> = {
     id: 'kong', label: 'Kong Gateway', sub: ':8000 / :8001 admin',
     icon: <Shield className="w-4 h-4" />, image: 'kong:3.6',
     ports: ['8000', '8001', '8443', '8444'], kind: 'gateway',
-    description: 'Central API gateway. All client traffic enters here. Handles JWT auth, rate limiting, and routes to downstream Nginx proxies. Admin API on :8001.',
-    tech: ['Kong 3.6', 'JWT Plugin', 'Rate-Limiting Plugin', 'CORS Plugin'],
-    responsibilities: ['RS256 JWT validation', 'Rate limiting per consumer', 'Request routing', 'CORS headers', 'API key management'],
+    description: 'Central API gateway. All client traffic enters here. Handles RS256 JWT validation, CORS, and rate limiting. Routes /oauth, /login, and /api/oauth/introspect to user-service without JWT enforcement (Passport\'s own auth). Admin API on :8001.',
+    tech: ['Kong 3.6', 'JWT Plugin (RS256)', 'Rate-Limiting Plugin', 'CORS Plugin', 'Prometheus Plugin'],
+    responsibilities: ['RS256 JWT validation', 'Rate limiting per consumer', 'Request routing', 'CORS headers', 'OAuth2 route passthrough (/oauth, /login, /api/oauth/introspect)', 'Prometheus metrics export'],
   },
   'kong-db': {
     id: 'kong-db', label: 'kong-db', sub: 'PostgreSQL 15',
@@ -125,11 +125,11 @@ const ALL: Record<string, Comp> = {
     id: 'user-app', label: 'user-app', sub: 'Laravel 12 · PHP-FPM :9000',
     icon: <Lock className="w-4 h-4" />, image: 'dynadoc-flow-user-app',
     ports: ['9000 (FPM, internal)'], kind: 'service',
-    description: 'User Service — handles all identity and auth operations. Issues RS256 JWTs. Supports native login, Google OAuth, and GitHub OAuth (SSO). Integrates Klarna Payments for subscription checkout. On login, publishes a `user.logged` event to Kafka. Password reset publishes a `notification.send` event so the Notification Service dispatches the reset email.',
-    tech: ['PHP Laravel 12', 'PHP-FPM', 'PostgreSQL', 'JWT RS256', 'rdkafka', 'OpenTelemetry', 'Google OAuth 2.0', 'GitHub OAuth', 'Klarna Payments API'],
-    responsibilities: ['User registration & login', 'JWT issuance & rotation', 'SSO via Google OAuth 2.0', 'SSO via GitHub OAuth', 'Klarna checkout session creation', 'Klarna order capture & cancel', 'Klarna settings management (system admin)', 'Password reset flow', 'Profile management', 'Publishes user.logged to Kafka', 'Publishes notification.send for password reset emails'],
+    description: 'User Service — central Auth Server and identity hub. Issues RS256 JWTs and hosts the OAuth2 Authorization Server (Laravel Passport). Supports native login, Google/GitHub OAuth, and enterprise SSO via Authorization Code Grant. Exposes a token introspection endpoint for downstream services. Integrates Klarna Payments. On login, publishes a `user.logged` event to Kafka.',
+    tech: ['PHP Laravel 12', 'PHP-FPM', 'PostgreSQL', 'Laravel Passport (OAuth2)', 'JWT RS256', 'rdkafka', 'OpenTelemetry', 'Google OAuth 2.0', 'GitHub OAuth', 'Klarna Payments API'],
+    responsibilities: ['User registration & login', 'OAuth2 Authorization Server (Passport)', 'Enterprise SSO — Authorization Code Grant', 'JWT issuance & rotation (RS256)', 'Token introspection endpoint (/api/oauth/introspect)', 'Token revocation on logout', 'SSO via Google OAuth 2.0', 'SSO via GitHub OAuth', 'Klarna checkout session creation', 'Klarna order capture & cancel', 'Password reset flow', 'Publishes user.logged to Kafka'],
     topics: ['user.logged', 'notification.send'],
-    config: { env: ['DB_HOST=user-db', 'DB_PORT=5432', 'REDIS_HOST=redis', 'KAFKA_BROKERS=kafka-svc:9092', 'JWT_ALGO=RS256', 'FRONTEND_URL=https://ddoc.fi', 'GOOGLE_CLIENT_ID=<secret>', 'GITHUB_CLIENT_ID=<secret>'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
+    config: { env: ['DB_HOST=user-db', 'DB_PORT=5432', 'KAFKA_BROKERS=kafka-svc:9092', 'JWT_ALGO=RS256', 'PASSPORT_CLIENT_ID=<secret>', 'PASSPORT_CLIENT_SECRET=<secret>', 'INTROSPECT_SECRET=<secret>', 'FRONTEND_URL=https://ddoc.fi', 'GOOGLE_CLIENT_ID=<secret>', 'GITHUB_CLIENT_ID=<secret>'], volumes: ['./storage:/var/www/html/storage'], network: 'dynadoc-net' },
   },
   'template-app': {
     id: 'template-app', label: 'template-app', sub: 'Laravel 12 · PHP-FPM :9000',
@@ -261,9 +261,9 @@ const ALL: Record<string, Comp> = {
     id: 'user-db', label: 'user-db', sub: 'PostgreSQL 15 · :5432',
     icon: <Database className="w-4 h-4" />, image: 'postgres:15',
     ports: ['5432'], kind: 'database',
-    description: 'Dedicated PostgreSQL database for the User Service. Contains users, password hashes, JWT keys, and personal access tokens. Isolated — no other service touches this DB.',
+    description: 'Dedicated PostgreSQL database for the User Service. Contains users, password hashes, Passport OAuth2 tables, and JWT keys. Isolated — no other service touches this DB.',
     tech: ['PostgreSQL 15'],
-    responsibilities: ['users table', 'personal_access_tokens table', 'cache & sessions tables', 'jobs queue table'],
+    responsibilities: ['users table', 'oauth_access_tokens table', 'oauth_clients table', 'oauth_auth_codes table', 'cache & sessions tables', 'jobs queue table'],
   },
   'template-db': {
     id: 'template-db', label: 'template-db', sub: 'PostgreSQL 15 · :5433',
@@ -2819,6 +2819,22 @@ const ArchitecturePage: React.FC = () => {
                 title: 'SSO, Payments, API Keys & IaC',
                 items: ['Google OAuth 2.0 + GitHub OAuth (SSO) in user-service', 'Klarna Payments integration (checkout, capture, cancel)', 'API Key Service (Go) for machine-to-machine auth', 'Webhook Service (Go) with Kafka-driven delivery & retry', 'AlertManager, Node Exporter, kube-state-metrics added to observability', 'Kustomize IaC — base + production overlay, pinned image tags', 'Traefik TLS ingress (Let\'s Encrypt) for ddoc.fi', 'CD pipeline with kustomize overlay validation'],
               },
+              {
+                version: 'v1.9.0',
+                date: 'May 2026',
+                color: 'bg-[#fff7ed] border-[#fdba74]',
+                dot: 'bg-[#ea580c]',
+                title: 'Observability, Load Testing & Rich Editor',
+                items: ['Infrastructure metrics page (/infrastructure) with live pod status', 'Kafka exporter + Grafana dashboards for Kafka broker metrics', 'k6 smoke, regression, and load test suites', 'Enhanced rich text editor with slash commands, tables, and image support', 'imagePullPolicy=Always on all deployments for reliable rollouts'],
+              },
+              {
+                version: 'v2.0.0',
+                date: 'May 2026',
+                color: 'bg-[#f0fdf4] border-[#4ade80]',
+                dot: 'bg-[#16a34a]',
+                title: 'Enterprise SSO — OAuth2 Authorization Code Grant',
+                items: ['Laravel Passport installed as OAuth2 Authorization Server', 'Full Authorization Code Grant flow with HMAC-signed stateless CSRF', 'Token introspection endpoint (/api/oauth/introspect) — enriched claims for downstream services', 'All downstream middleware (template, file, audit) detect token type and call introspect for Bearer tokens', 'Token revocation on logout via passport_jti embedded in session JWT', 'Auto-consent Blade view — no manual approval for first-party clients', 'SSO login button on frontend with EN/FI/SV i18n', 'Kong routes updated for /oauth, /login, /api/oauth/introspect (public, no JWT plugin)'],
+              },
             ].map((release, i) => (
               <div key={release.version} className="relative pl-16 mb-8 last:mb-0">
                 <div className={`absolute left-[18px] top-1 w-4 h-4 rounded-full border-2 border-white shadow ${release.dot}`} />
@@ -2852,7 +2868,7 @@ const ArchitecturePage: React.FC = () => {
             {[
               { icon: <GitBranch />, title: 'Database-per-Service', desc: 'Each microservice owns an isolated PostgreSQL DB. Zero cross-DB queries — services communicate only via API or Kafka events.', badge: 'Isolation' },
               { icon: <MessageSquare />, title: 'Event-Driven Async', desc: 'PDF generation is fully async via Kafka (RF=3, min-ISR=2). A slow render never blocks user-facing APIs.', badge: 'Resilience' },
-              { icon: <Shield />, title: 'Gateway-First Security', desc: 'Kong validates every RS256 JWT before traffic reaches services. Rate limiting and CORS handled centrally.', badge: 'Security' },
+              { icon: <Shield />, title: 'Gateway-First Security', desc: 'Kong validates every RS256 JWT before traffic reaches services. Rate limiting and CORS handled centrally. OAuth2 Authorization Code Grant (Passport) for enterprise SSO — with token introspection for downstream claim enrichment.', badge: 'Security' },
               { icon: <ChevronsRight />, title: 'Horizontal Scalability', desc: 'Services, Nginx proxies, Kafka brokers, and workers all scale horizontally by adding more instances without architecture changes.', badge: 'Scalability' },
               { icon: <Eye />, title: 'Full Observability', desc: 'OTel auto-instrumentation in every Laravel service. Traces, metrics, and logs flow into Grafana — every request is visible end-to-end.', badge: 'Visibility' },
               { icon: <Cloud />, title: 'Cloud-Portable Storage', desc: 'LocalStack in dev, AWS S3 in production — same AWS SDK. Zero code change between environments.', badge: 'Portability' },

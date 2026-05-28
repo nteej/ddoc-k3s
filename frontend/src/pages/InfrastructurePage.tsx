@@ -165,7 +165,7 @@ const MAKECMDS = [
   { cmd: 'make validate',              desc: 'Render kustomize overlay + dry-run apply',         group: 'IaC' },
   { cmd: 'make diff',                  desc: 'Show live cluster diff vs desired state',           group: 'IaC' },
   { cmd: 'make apply',                 desc: 'Idempotent full apply (production overlay)',        group: 'IaC' },
-  { cmd: 'make overlay-tag TAG=v1.9.0', desc: 'Pin image tags in production overlay',             group: 'IaC' },
+  { cmd: 'make overlay-tag TAG=v2.0.0', desc: 'Pin image tags in production overlay',             group: 'IaC' },
   { cmd: 'make deploy',                desc: 'Full ordered initial deploy (10 steps)',            group: 'Deploy' },
   { cmd: 'make rollout-user',          desc: 'Rolling update user-service pods',                  group: 'Deploy' },
   { cmd: 'make rollout-frontend',      desc: 'Rolling update frontend deployment',                group: 'Deploy' },
@@ -500,7 +500,7 @@ const InfrastructurePage: React.FC = () => {
                 <div className="text-gray-400">images:</div>
                 <div>&nbsp; - name: REGISTRY/dynadoc/user-service</div>
                 <div>&nbsp;&nbsp;&nbsp; newName: ghcr.io/nteej/dynadoc/user-service</div>
-                <div className="text-[#7c3aed] font-bold">&nbsp;&nbsp;&nbsp; newTag: v1.8.0</div>
+                <div className="text-[#7c3aed] font-bold">&nbsp;&nbsp;&nbsp; newTag: v2.0.0</div>
                 <div className="text-gray-400 mt-1">&nbsp; # … 7 more images</div>
               </div>
               <div className="mt-4 text-xs text-gray-400 leading-relaxed">
@@ -622,11 +622,13 @@ const InfrastructurePage: React.FC = () => {
                 <p>Run once on VPS setup or when rotating credentials.</p>
               </div>
               <div className="mt-4 font-mono text-[10px] bg-white rounded-lg p-3 text-gray-600 space-y-0.5">
-                <div>user-db-secret</div>
-                <div>user-app-secret  <span className="text-gray-300"># APP_KEY, JWT keys</span></div>
-                <div>sso-secrets      <span className="text-gray-300"># Google/GitHub OAuth</span></div>
-                <div>ghcr-pull-secret <span className="text-gray-300"># GHCR token</span></div>
-                <div>klarna-secrets   <span className="text-gray-300"># Klarna API keys</span></div>
+                <div>user-db-secret        <span className="text-gray-300"># Postgres password</span></div>
+                <div>user-app-secret       <span className="text-gray-300"># APP_KEY, MAIL_PASSWORD</span></div>
+                <div>sso-secret            <span className="text-gray-300"># Google/GitHub OAuth</span></div>
+                <div>introspect-secret     <span className="text-gray-300"># token introspection shared key</span></div>
+                <div>passport-client-secret <span className="text-gray-300"># OAuth2 client ID + secret</span></div>
+                <div>ghcr-pull-secret      <span className="text-gray-300"># GHCR token</span></div>
+                <div>klarna-secrets        <span className="text-gray-300"># Klarna API keys</span></div>
               </div>
             </div>
 
