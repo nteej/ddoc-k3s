@@ -16,6 +16,10 @@ class ExceptionHandler extends Handler
     public function render($request, \Throwable $e): Response
     {
         if ($e instanceof AuthenticationException) {
+            // Browser OAuth flow (Passport) expects a redirect to /login, not JSON
+            if (!$request->expectsJson()) {
+                return parent::render($request, $e);
+            }
             return response()->json([
                 'message' => 'Operation Failed',
                 'errors' => $e->getMessage(),
