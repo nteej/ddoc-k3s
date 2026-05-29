@@ -17,7 +17,7 @@ spec:
       initContainers:
         - name: copy-public
           image: REGISTRY/dynadoc/user-service:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command:
             - sh
             - -c
@@ -28,7 +28,7 @@ spec:
       containers:
         - name: php-fpm
           image: REGISTRY/dynadoc/user-service:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 9000
           env:
@@ -126,6 +126,21 @@ spec:
                 secretKeyRef:
                   name: introspect-secret
                   key: INTROSPECT_SECRET
+            # Passport OAuth2 — Authorization Code flow for Enterprise SSO
+            - name: SESSION_DRIVER
+              value: database
+            - name: PASSPORT_TOKEN_URL
+              value: http://user-svc.dynadoc.svc.cluster.local:80/oauth/token
+            - name: PASSPORT_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: passport-secret
+                  key: PASSPORT_CLIENT_ID
+            - name: PASSPORT_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: passport-secret
+                  key: PASSPORT_CLIENT_SECRET
           volumeMounts:
             - name: public-files
               mountPath: /var/www/html/public

@@ -7,6 +7,7 @@ namespace App\Domain\Exceptions;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Validation\ValidationException;
+use Laravel\Passport\Exceptions\OAuthServerException;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -15,6 +16,11 @@ class ExceptionHandler extends Handler
 {
     public function render($request, \Throwable $e): Response
     {
+        // Let Passport's OAuth exceptions render their own properly-formatted OAuth responses
+        if ($e instanceof OAuthServerException) {
+            return parent::render($request, $e);
+        }
+
         if ($e instanceof AuthenticationException) {
             // Browser OAuth flow (Passport) expects a redirect to /login, not JSON
             if (!$request->expectsJson()) {
@@ -54,9 +60,10 @@ class ExceptionHandler extends Handler
             ], Response::HTTP_UNAUTHORIZED);
         }
 
+        $this->report($e);
         return response()->json([
             'message' => 'Operation Failed',
-            'description' => app()->environment(['local', 'testing']) ? $e->getMessage() : 'Internal Server Error',
+            'description' => $e->getMessage(),
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 }

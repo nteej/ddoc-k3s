@@ -14,6 +14,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust X-Forwarded-For/Host/Proto from nginx+Kong but NOT X-Forwarded-Port
+        // (Kong injects port 8000 which breaks URL generation for browser OAuth redirects)
+        $middleware->trustProxies(
+            at: '*',
+            headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR
+                   | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST
+                   | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO,
+        );
+        // Passport's OAuth routes use auth_token for CSRF; exclude from Laravel CSRF middleware
+        $middleware->validateCsrfTokens(except: ['/oauth/*']);
         $middleware->prepend(HandleCors::class);
         $middleware->alias([
             'jwt.auth'     => ExtractJwtClaimsMiddleware::class,

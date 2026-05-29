@@ -88,6 +88,20 @@ spec:
                 name: kong-svc
                 port:
                   number: 8000
+          - path: /oauth
+            pathType: Prefix
+            backend:
+              service:
+                name: kong-svc
+                port:
+                  number: 8000
+          - path: /login
+            pathType: Prefix
+            backend:
+              service:
+                name: kong-svc
+                port:
+                  number: 8000
           - path: /
             pathType: Prefix
             backend:

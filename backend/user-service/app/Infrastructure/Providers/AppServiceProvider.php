@@ -14,6 +14,8 @@ use App\Infrastructure\Repositories\PackageUpgradeRequestRepository;
 use App\Infrastructure\Repositories\UserRepository;
 use App\Infrastructure\Repositories\WebhookRepository;
 use Illuminate\Support\Facades\Event;
+use App\Infrastructure\OAuth\PassportClient;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -45,8 +47,14 @@ class AppServiceProvider extends ServiceProvider
             PublishUserLoginToKafka::class,
         );
 
+        // Force HTTPS URL generation when deployed behind nginx+Kong (which terminate TLS externally)
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         // Passport OAuth2 server configuration
-        // useUuidIds() removed in Passport 12 — UUID support is automatic via HasUuids on the User model
+        Passport::useClientModel(PassportClient::class);
+        Passport::setClientUuids(true);
         Passport::tokensExpireIn(now()->addHours(24));
         Passport::refreshTokensExpireIn(now()->addDays(30));
         Passport::personalAccessTokensExpireIn(now()->addMonths(6));
