@@ -19,6 +19,34 @@ spec:
         fsGroup: 65534
         runAsNonRoot: true
         runAsUser: 65534
+      # Render alertmanager.yml from the ConfigMap template,
+      # substituting ${SMTP_PASSWORD} from the smtp secret.
+      initContainers:
+        - name: config-init
+          image: alpine:3.19
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache gettext >/dev/null 2>&1
+              envsubst < /template/alertmanager.yml > /rendered/alertmanager.yml
+              echo "Config rendered:"
+              grep -E "smtp_smarthost|smtp_from|smtp_auth_username|receiver" /rendered/alertmanager.yml | head -20
+          env:
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-smtp-secret
+                  key: SMTP_PASSWORD
+          volumeMounts:
+            - name: config-template
+              mountPath: /template
+            - name: config-rendered
+              mountPath: /rendered
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+
       containers:
         - name: alertmanager
           image: prom/alertmanager:v0.27.0
@@ -33,7 +61,7 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 32Mi
+              memory: 48Mi
             limits:
               cpu: 100m
               memory: 128Mi
@@ -41,24 +69,46 @@ spec:
             httpGet:
               path: /-/healthy
               port: 9093
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /-/ready
               port: 9093
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             timeoutSeconds: 5
           volumeMounts:
-            - name: config
+            # Rendered config (SMTP password injected by initContainer)
+            - name: config-rendered
               mountPath: /etc/alertmanager/alertmanager.yml
               subPath: alertmanager.yml
+            # HTML email templates
+            - name: email-templates
+              mountPath: /etc/alertmanager/templates
             - name: data
               mountPath: /alertmanager
+
       volumes:
-        - name: config
+        # ConfigMap with ${SMTP_PASSWORD} placeholder — read by initContainer
+        - name: config-template
           configMap:
             name: alertmanager-cm
+            items:
+              - key: alertmanager.yml
+                path: alertmanager.yml
+        # emptyDir shared between initContainer and main container
+        - name: config-rendered
+          emptyDir: {}
+        # Email HTML templates from ConfigMap
+        - name: email-templates
+          configMap:
+            name: alertmanager-cm
+            items:
+              - key: email_critical.tmpl
+                path: email_critical.tmpl
+              - key: email_warning.tmpl
+                path: email_warning.tmpl
+        # Alertmanager state (silence, notification log) — persisted
         - name: data
           emptyDir: {}
 ---
