@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileText, Tag, Zap, FileSpreadsheet, Code2, Globe,
   ArrowRight, CheckCircle, ChevronRight, Eye, Key, Mail,
+  Shield, ScanSearch, UserCheck, LogOut, X, Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,14 @@ const LANGUAGES = [
 
 const LandingPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const [showBanner, setShowBanner] = useState(true);
+
+  const whatsNewItems = [
+    { icon: <Shield className="w-5 h-5" />, title: t('landing.whatsNewItem1Title'), desc: t('landing.whatsNewItem1Desc'), color: 'bg-indigo-500' },
+    { icon: <ScanSearch className="w-5 h-5" />, title: t('landing.whatsNewItem2Title'), desc: t('landing.whatsNewItem2Desc'), color: 'bg-blue-500' },
+    { icon: <UserCheck className="w-5 h-5" />, title: t('landing.whatsNewItem3Title'), desc: t('landing.whatsNewItem3Desc'), color: 'bg-teal-500' },
+    { icon: <LogOut className="w-5 h-5" />, title: t('landing.whatsNewItem4Title'), desc: t('landing.whatsNewItem4Desc'), color: 'bg-violet-500' },
+  ];
 
   const features = [
     { icon: <FileText className="w-6 h-6" />, title: t('landing.feat1Title'), desc: t('landing.feat1Desc'), bg: 'bg-blue-900' },
@@ -37,8 +46,39 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+
+      {/* ── Release announcement banner ── */}
+      {showBanner && (
+        <div className="fixed top-0 inset-x-0 z-50 bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
+          <div className="max-w-6xl mx-auto px-4 h-10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm min-w-0">
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-yellow-300" />
+              <span className="truncate">{t('landing.releaseBanner')}</span>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <a
+                href="#whats-new"
+                onClick={() => {/* smooth scroll handled by href */}}
+                className="text-xs font-semibold text-white/90 hover:text-white underline underline-offset-2 whitespace-nowrap"
+              >
+                {t('landing.releaseBannerCta')} ↓
+              </a>
+              <button
+                onClick={() => setShowBanner(false)}
+                className="text-white/70 hover:text-white transition-colors p-0.5 rounded"
+                aria-label="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Navbar ── */}
-      <nav className="fixed top-0 inset-x-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <nav
+        className={`fixed inset-x-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all duration-200 ${showBanner ? 'top-10' : 'top-0'}`}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2">
@@ -79,10 +119,10 @@ const LandingPage: React.FC = () => {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="pt-36 pb-24 px-4 sm:px-6 text-center bg-blue-50">
+      <section className={`pb-24 px-4 sm:px-6 text-center bg-blue-50 transition-all duration-200 ${showBanner ? 'pt-44' : 'pt-36'}`}>
         <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-white border border-blue-200 px-4 py-1.5 rounded-full text-sm text-blue-700 mb-8 shadow-sm">
-            <Zap className="w-3.5 h-3.5 text-blue-700" />
+          <div className="inline-flex items-center gap-2 bg-white border border-indigo-200 px-4 py-1.5 rounded-full text-sm text-indigo-700 mb-8 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
             <span>{t('landing.featureBadge')}</span>
           </div>
 
@@ -122,6 +162,35 @@ const LandingPage: React.FC = () => {
               <span key={item.label} className="flex items-center gap-1.5">
                 {item.icon} {item.label}
               </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── What's New (v2.0 release) ── */}
+      <section id="whats-new" className="py-24 px-4 sm:px-6 bg-gradient-to-br from-blue-950 via-indigo-950 to-blue-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm text-indigo-200 mb-6 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+              <span>{t('landing.whatsNewBadge')}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('landing.whatsNewTitle')}</h2>
+            <p className="text-indigo-200 max-w-2xl mx-auto leading-relaxed">{t('landing.whatsNewSubtitle')}</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {whatsNewItems.map((item) => (
+              <div
+                key={item.title}
+                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors duration-200 backdrop-blur-sm"
+              >
+                <div className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center text-white mb-4 shadow-md`}>
+                  {item.icon}
+                </div>
+                <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-indigo-200 text-sm leading-relaxed">{item.desc}</p>
+              </div>
             ))}
           </div>
         </div>
