@@ -17,7 +17,8 @@
     "settings": "Inställningar",
     "myProfile": "Min profil",
     "signOut": "Logga ut",
-    "batch": "Batch"
+    "batch": "Batch",
+    "integrationDocs": "Integrationsdokumentation"
   },
   "login": {
     "tagline": "Logga in för att hantera dina dokument.",

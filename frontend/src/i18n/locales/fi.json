@@ -17,7 +17,8 @@
     "settings": "Asetukset",
     "myProfile": "Profiilini",
     "signOut": "Kirjaudu ulos",
-    "batch": "Eräajo"
+    "batch": "Eräajo",
+    "integrationDocs": "Integrointiohjeet"
   },
   "login": {
     "tagline": "Kirjaudu sisään hallitaksesi asiakirjojasi.",

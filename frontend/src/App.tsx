@@ -26,6 +26,7 @@ import InvitationPage from "./pages/InvitationPage";
 import ApiKeysPage from "./pages/ApiKeysPage";
 import WebhooksPage from "./pages/WebhooksPage";
 import SsoCallbackPage from "./pages/SsoCallbackPage";
+import SsoIntegrationPage from "./pages/SsoIntegrationPage";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => (
                 <WebhooksPage />
               </ProtectedLayout>
             } />
+            <Route path="/sso-integration" element={<SsoIntegrationPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

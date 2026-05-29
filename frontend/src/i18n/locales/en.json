@@ -17,7 +17,8 @@
     "settings": "Settings",
     "myProfile": "My Profile",
     "signOut": "Sign out",
-    "batch": "Batch"
+    "batch": "Batch",
+    "integrationDocs": "Integration Docs"
   },
   "login": {
     "tagline": "Sign in to manage your documents.",

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, User, Menu, X, Zap, Globe, BarChart2, ExternalLink, ChevronDown } from 'lucide-react';
+import { LogOut, User, Menu, X, Zap, Globe, BarChart2, ExternalLink, ChevronDown, BookOpen } from 'lucide-react';
 import LogoMark from '@/components/LogoMark';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -133,6 +133,15 @@ const Header: React.FC = () => {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+              <Link
+                to="/sso-integration"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                  isActiveRoute('/sso-integration') ? 'bg-indigo-50 text-indigo-900' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                {t('nav.integrationDocs')}
+              </Link>
             </RoleGuard>
           </nav>
 
@@ -267,7 +276,7 @@ const Header: React.FC = () => {
                 <div className="pt-2 border-t border-gray-200">
                   <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                     <BarChart2 className="w-3.5 h-3.5" />
-                    Monitoring
+                    Admin
                   </p>
                   {MONITORING_LINKS.map(({ label, url }) => (
                     <a
@@ -282,6 +291,16 @@ const Header: React.FC = () => {
                       <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
                     </a>
                   ))}
+                  <Link
+                    to="/sso-integration"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActiveRoute('/sso-integration') ? 'bg-indigo-50 text-indigo-900' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    {t('nav.integrationDocs')}
+                  </Link>
                 </div>
               </RoleGuard>
 
