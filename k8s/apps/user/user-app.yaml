@@ -126,6 +126,45 @@ spec:
                 secretKeyRef:
                   name: introspect-secret
                   key: INTROSPECT_SECRET
+            - name: TEMPLATE_DB_HOST
+              value: template-db-svc
+            - name: TEMPLATE_DB_PORT
+              value: "5432"
+            - name: TEMPLATE_DB_DATABASE
+              value: template_service
+            - name: TEMPLATE_DB_USERNAME
+              value: postgres
+            - name: TEMPLATE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: template-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: FILE_DB_HOST
+              value: file-db-svc
+            - name: FILE_DB_PORT
+              value: "5432"
+            - name: FILE_DB_DATABASE
+              value: file_service
+            - name: FILE_DB_USERNAME
+              value: postgres
+            - name: FILE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: file-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: AUDIT_DB_HOST
+              value: audit-db-svc
+            - name: AUDIT_DB_PORT
+              value: "5432"
+            - name: AUDIT_DB_DATABASE
+              value: audit_service
+            - name: AUDIT_DB_USERNAME
+              value: postgres
+            - name: AUDIT_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: audit-db-secret
+                  key: POSTGRES_PASSWORD
             # Passport OAuth2 — Authorization Code flow for Enterprise SSO
             - name: SESSION_DRIVER
               value: database

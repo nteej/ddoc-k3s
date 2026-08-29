@@ -21,6 +21,8 @@ COPY . .
 # composer update regenerates the lock file (needed when composer.json is edited directly)
 RUN COMPOSER_MEMORY_LIMIT=-1 composer update --no-interaction --prefer-dist --optimize-autoloader
 
+RUN php artisan filament:assets:publish 2>/dev/null || true
+
 RUN chown -R www-data:www-data /var/www/html
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

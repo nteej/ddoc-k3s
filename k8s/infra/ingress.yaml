@@ -102,6 +102,13 @@ spec:
                 name: kong-svc
                 port:
                   number: 8000
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: user-svc
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:

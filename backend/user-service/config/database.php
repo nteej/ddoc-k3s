@@ -97,6 +97,48 @@ return [
             'sslmode' => 'prefer',
         ],
 
+        'template_db' => [
+            'driver' => 'pgsql',
+            'host' => env('TEMPLATE_DB_HOST', 'template-db-svc'),
+            'port' => env('TEMPLATE_DB_PORT', '5432'),
+            'database' => env('TEMPLATE_DB_DATABASE', 'template_service'),
+            'username' => env('TEMPLATE_DB_USERNAME', 'postgres'),
+            'password' => env('TEMPLATE_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
+        'file_db' => [
+            'driver' => 'pgsql',
+            'host' => env('FILE_DB_HOST', 'file-db-svc'),
+            'port' => env('FILE_DB_PORT', '5432'),
+            'database' => env('FILE_DB_DATABASE', 'file_service'),
+            'username' => env('FILE_DB_USERNAME', 'postgres'),
+            'password' => env('FILE_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
+        'audit_db' => [
+            'driver' => 'pgsql',
+            'host' => env('AUDIT_DB_HOST', 'audit-db-svc'),
+            'port' => env('AUDIT_DB_PORT', '5432'),
+            'database' => env('AUDIT_DB_DATABASE', 'audit_service'),
+            'username' => env('AUDIT_DB_USERNAME', 'postgres'),
+            'password' => env('AUDIT_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
