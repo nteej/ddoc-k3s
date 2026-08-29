@@ -10,7 +10,10 @@ class FilesGeneratedChartWidget extends ChartWidget
 {
     protected static ?string $heading = 'Files Generated (last 30 days)';
 
-    protected string $type = 'line';
+    protected function getType(): string
+    {
+        return 'line';
+    }
 
     protected function getData(): array
     {
