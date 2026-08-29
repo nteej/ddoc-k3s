@@ -1,277 +1,547 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FileText, Tag, Zap, FileSpreadsheet, Code2, Globe,
-  ArrowRight, CheckCircle, ChevronRight, Eye, Key, Mail,
-  Shield, ScanSearch, UserCheck, LogOut, X, Sparkles,
+  ArrowRight, ArrowLeft, Download, Copy, CheckCheck,
+  Sparkles, Check, Layout, Palette,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import LogoMark from '@/components/LogoMark';
+import { cn } from '@/lib/utils';
 
-const LANGUAGES = [
-  { code: 'en', label: 'EN' },
-  { code: 'fi', label: 'FI' },
-  { code: 'sv', label: 'SV' },
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface PostConfig {
+  headline: string;
+  subtext: string;
+  cta: string;
+  bgColor: string;
+  bgColor2: string;
+  useGradient: boolean;
+  textColor: string;
+  accentColor: string;
+  font: 'sans' | 'serif' | 'mono';
+  brandName: string;
+  showCta: boolean;
+  showBrand: boolean;
+}
+
+interface Template {
+  id: string;
+  name: string;
+  platform: string;
+  platformColor: string;
+  description: string;
+  aspectW: number;
+  aspectH: number;
+  layout: 'centered' | 'bottom' | 'quote';
+  defaults: PostConfig;
+}
+
+// ── Templates ─────────────────────────────────────────────────────────────────
+
+const TEMPLATES: Template[] = [
+  {
+    id: 'bold-gradient',
+    name: 'Bold Gradient',
+    platform: 'Instagram',
+    platformColor: 'bg-pink-500',
+    description: '1:1 square with vibrant gradient background',
+    aspectW: 1, aspectH: 1, layout: 'centered',
+    defaults: {
+      headline: 'Make an Impact Today', subtext: 'Share your story with the world and inspire others', cta: 'Learn More',
+      bgColor: '#7c3aed', bgColor2: '#ec4899', useGradient: true, textColor: '#ffffff',
+      accentColor: '#fbbf24', font: 'sans', brandName: 'YourBrand', showCta: true, showBrand: true,
+    },
+  },
+  {
+    id: 'minimal-clean',
+    name: 'Minimal Clean',
+    platform: 'Instagram',
+    platformColor: 'bg-pink-500',
+    description: '1:1 square with light, elegant white design',
+    aspectW: 1, aspectH: 1, layout: 'centered',
+    defaults: {
+      headline: 'Less Is More', subtext: 'Powerful ideas expressed simply and clearly to your audience', cta: 'Read More',
+      bgColor: '#f8fafc', bgColor2: '#e2e8f0', useGradient: false, textColor: '#1e293b',
+      accentColor: '#6366f1', font: 'sans', brandName: 'YourBrand', showCta: true, showBrand: true,
+    },
+  },
+  {
+    id: 'tweet-card',
+    name: 'Tweet Card',
+    platform: 'Twitter / X',
+    platformColor: 'bg-sky-500',
+    description: '16:9 wide card optimised for X / Twitter',
+    aspectW: 16, aspectH: 9, layout: 'centered',
+    defaults: {
+      headline: 'Big Thoughts Deserve Big Visibility', subtext: 'Craft messages that resonate and get shared across the platform', cta: 'Follow Us',
+      bgColor: '#0f172a', bgColor2: '#1e3a5f', useGradient: true, textColor: '#f8fafc',
+      accentColor: '#38bdf8', font: 'sans', brandName: '@YourHandle', showCta: false, showBrand: true,
+    },
+  },
+  {
+    id: 'linkedin-pro',
+    name: 'Professional',
+    platform: 'LinkedIn',
+    platformColor: 'bg-blue-600',
+    description: '1.91:1 banner for LinkedIn posts',
+    aspectW: 1.91, aspectH: 1, layout: 'bottom',
+    defaults: {
+      headline: 'Thought Leadership Starts Here', subtext: 'Connect, share insights, and grow your professional network with content that matters to your industry.', cta: 'Connect Now',
+      bgColor: '#1d4ed8', bgColor2: '#1e3a8a', useGradient: true, textColor: '#ffffff',
+      accentColor: '#93c5fd', font: 'sans', brandName: 'Your Company', showCta: true, showBrand: true,
+    },
+  },
+  {
+    id: 'story-vibrant',
+    name: 'Vibrant Story',
+    platform: 'Instagram Story',
+    platformColor: 'bg-orange-500',
+    description: '9:16 vertical story with bold colours',
+    aspectW: 9, aspectH: 16, layout: 'centered',
+    defaults: {
+      headline: 'Swipe Up!', subtext: "Exclusive content just for you. Don't miss today's limited offer.", cta: 'Tap Here',
+      bgColor: '#f97316', bgColor2: '#ef4444', useGradient: true, textColor: '#ffffff',
+      accentColor: '#fef08a', font: 'sans', brandName: 'YourBrand', showCta: true, showBrand: true,
+    },
+  },
+  {
+    id: 'quote-card',
+    name: 'Quote Card',
+    platform: 'All Platforms',
+    platformColor: 'bg-slate-600',
+    description: '1:1 dark inspirational quote design',
+    aspectW: 1, aspectH: 1, layout: 'quote',
+    defaults: {
+      headline: 'The best time to start was yesterday. The next best time is now.', subtext: 'Share wisdom that moves people',
+      cta: 'Share This', bgColor: '#18181b', bgColor2: '#27272a', useGradient: false, textColor: '#fafafa',
+      accentColor: '#a78bfa', font: 'serif', brandName: '— Author Name', showCta: false, showBrand: true,
+    },
+  },
 ];
 
-const LandingPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const [showBanner, setShowBanner] = useState(true);
+// ── Post Preview ──────────────────────────────────────────────────────────────
 
-  const whatsNewItems = [
-    { icon: <Shield className="w-5 h-5" />, title: t('landing.whatsNewItem1Title'), desc: t('landing.whatsNewItem1Desc'), color: 'bg-indigo-500' },
-    { icon: <ScanSearch className="w-5 h-5" />, title: t('landing.whatsNewItem2Title'), desc: t('landing.whatsNewItem2Desc'), color: 'bg-blue-500' },
-    { icon: <UserCheck className="w-5 h-5" />, title: t('landing.whatsNewItem3Title'), desc: t('landing.whatsNewItem3Desc'), color: 'bg-teal-500' },
-    { icon: <LogOut className="w-5 h-5" />, title: t('landing.whatsNewItem4Title'), desc: t('landing.whatsNewItem4Desc'), color: 'bg-violet-500' },
-  ];
+const CANONICAL = 400;
 
-  const features = [
-    { icon: <FileText className="w-6 h-6" />, title: t('landing.feat1Title'), desc: t('landing.feat1Desc'), bg: 'bg-blue-900' },
-    { icon: <Eye className="w-6 h-6" />, title: t('landing.feat7Title'), desc: t('landing.feat7Desc'), bg: 'bg-indigo-600' },
-    { icon: <Tag className="w-6 h-6" />, title: t('landing.feat2Title'), desc: t('landing.feat2Desc'), bg: 'bg-sky-600' },
-    { icon: <Zap className="w-6 h-6" />, title: t('landing.feat3Title'), desc: t('landing.feat3Desc'), bg: 'bg-orange-500' },
-    { icon: <Key className="w-6 h-6" />, title: t('landing.feat8Title'), desc: t('landing.feat8Desc'), bg: 'bg-amber-600' },
-    { icon: <Mail className="w-6 h-6" />, title: t('landing.feat9Title'), desc: t('landing.feat9Desc'), bg: 'bg-rose-600' },
-    { icon: <FileSpreadsheet className="w-6 h-6" />, title: t('landing.feat4Title'), desc: t('landing.feat4Desc'), bg: 'bg-green-600' },
-    { icon: <Code2 className="w-6 h-6" />, title: t('landing.feat5Title'), desc: t('landing.feat5Desc'), bg: 'bg-blue-700' },
-    { icon: <Globe className="w-6 h-6" />, title: t('landing.feat6Title'), desc: t('landing.feat6Desc'), bg: 'bg-teal-600' },
-  ];
+interface PostPreviewProps {
+  template: Template;
+  config: PostConfig;
+  displayWidth: number;
+}
 
-  const steps = [
-    { num: '01', title: t('landing.step1Title'), desc: t('landing.step1Desc') },
-    { num: '02', title: t('landing.step2Title'), desc: t('landing.step2Desc') },
-    { num: '03', title: t('landing.step3Title'), desc: t('landing.step3Desc') },
-  ];
+const PostPreview: React.FC<PostPreviewProps> = ({ template, config, displayWidth }) => {
+  const canonicalH = Math.round(CANONICAL * template.aspectH / template.aspectW);
+  const displayH = Math.round(displayWidth * template.aspectH / template.aspectW);
+  const scale = displayWidth / CANONICAL;
+
+  const bg = config.useGradient
+    ? `linear-gradient(135deg, ${config.bgColor}, ${config.bgColor2})`
+    : config.bgColor;
+
+  const fontFamily =
+    config.font === 'serif' ? 'Georgia, serif' :
+    config.font === 'mono' ? 'monospace' :
+    'system-ui, sans-serif';
+
+  const inner: React.CSSProperties = {
+    position: 'absolute', top: 0, left: 0,
+    width: CANONICAL, height: canonicalH,
+    background: bg, overflow: 'hidden', fontFamily,
+    transform: `scale(${scale})`, transformOrigin: 'top left',
+  };
+
+  let content: React.ReactNode;
+
+  if (template.layout === 'quote') {
+    content = (
+      <>
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, background: config.accentColor }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 50px', gap: 18 }}>
+          <div style={{ fontSize: 60, lineHeight: 1, color: config.accentColor, fontWeight: 800 }}>"</div>
+          <div style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.5, fontStyle: 'italic', color: config.textColor }}>
+            {config.headline}
+          </div>
+          {config.showBrand && <div style={{ fontSize: 14, color: config.accentColor, fontWeight: 600 }}>{config.brandName}</div>}
+          <div style={{ fontSize: 13, color: config.textColor, opacity: 0.5 }}>{config.subtext}</div>
+        </div>
+      </>
+    );
+  } else if (template.layout === 'bottom') {
+    content = (
+      <>
+        <div style={{ position: 'absolute', top: 0, right: 0, width: '55%', height: '100%', background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 40, gap: 12 }}>
+          {config.showBrand && <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: config.accentColor }}>{config.brandName}</div>}
+          <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.25, color: config.textColor }}>{config.headline}</div>
+          <div style={{ fontSize: 14, lineHeight: 1.6, color: config.textColor, opacity: 0.75, maxWidth: '75%' }}>{config.subtext}</div>
+          {config.showCta && (
+            <div><span style={{ display: 'inline-block', padding: '8px 20px', borderRadius: 4, background: config.accentColor, color: config.bgColor, fontSize: 12, fontWeight: 700 }}>{config.cta}</span></div>
+          )}
+        </div>
+      </>
+    );
+  } else {
+    content = (
+      <>
+        <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
+        <div style={{ position: 'absolute', bottom: -30, left: -30, width: 150, height: 150, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 40, gap: 18 }}>
+          {config.showBrand && <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', color: config.accentColor }}>{config.brandName}</div>}
+          <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.2, color: config.textColor }}>{config.headline}</div>
+          <div style={{ fontSize: 14, lineHeight: 1.7, color: config.textColor, opacity: 0.8 }}>{config.subtext}</div>
+          {config.showCta && (
+            <div><span style={{ display: 'inline-block', padding: '10px 24px', borderRadius: 999, background: config.accentColor, color: config.bgColor, fontSize: 13, fontWeight: 700 }}>{config.cta}</span></div>
+          )}
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div style={{ width: displayWidth, height: displayH, position: 'relative', overflow: 'hidden', borderRadius: 12 }}>
+      <div style={inner}>{content}</div>
+    </div>
+  );
+};
 
-      {/* ── Release announcement banner ── */}
-      {showBanner && (
-        <div className="fixed top-0 inset-x-0 z-50 bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
-          <div className="max-w-6xl mx-auto px-4 h-10 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm min-w-0">
-              <Sparkles className="w-3.5 h-3.5 shrink-0 text-yellow-300" />
-              <span className="truncate">{t('landing.releaseBanner')}</span>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <a
-                href="#whats-new"
-                onClick={() => {/* smooth scroll handled by href */}}
-                className="text-xs font-semibold text-white/90 hover:text-white underline underline-offset-2 whitespace-nowrap"
-              >
-                {t('landing.releaseBannerCta')} ↓
-              </a>
-              <button
-                onClick={() => setShowBanner(false)}
-                className="text-white/70 hover:text-white transition-colors p-0.5 rounded"
-                aria-label="Dismiss"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+// ── Wizard Step Indicator ─────────────────────────────────────────────────────
 
-      {/* ── Navbar ── */}
-      <nav
-        className={`fixed inset-x-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all duration-200 ${showBanner ? 'top-10' : 'top-0'}`}
-      >
+const STEPS = [
+  { num: 1, label: 'Choose Template', Icon: Layout },
+  { num: 2, label: 'Customise', Icon: Palette },
+  { num: 3, label: 'Download & Share', Icon: Download },
+];
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+const LandingPage: React.FC = () => {
+  const { i18n } = useTranslation();
+  const [step, setStep] = useState(0);
+  const [selected, setSelected] = useState<Template | null>(null);
+  const [config, setConfig] = useState<PostConfig | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const pick = (tpl: Template) => {
+    setSelected(tpl);
+    setConfig({ ...tpl.defaults });
+  };
+
+  const patch = useCallback((p: Partial<PostConfig>) => setConfig(prev => prev ? { ...prev, ...p } : null), []);
+
+  const next = () => setStep(s => Math.min(s + 1, 2));
+  const back = () => setStep(s => Math.max(s - 1, 0));
+
+  const handleDownload = () => {
+    if (!selected || !config) return;
+    const bg = config.useGradient ? `linear-gradient(135deg,${config.bgColor},${config.bgColor2})` : config.bgColor;
+    const pw = window.open('', '_blank');
+    if (!pw) return;
+    pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${config.headline}</title>
+    <style>*{box-sizing:border-box;margin:0;padding:0}body{background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .post{width:540px;height:${Math.round(540 * selected.aspectH / selected.aspectW)}px;background:${bg};border-radius:10px;position:relative;overflow:hidden;
+    font-family:${config.font==='serif'?'Georgia,serif':config.font==='mono'?'monospace':'system-ui,sans-serif'};display:flex;flex-direction:column;justify-content:center;padding:48px;gap:18px}
+    .brand{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${config.accentColor}}
+    .headline{font-size:34px;font-weight:800;line-height:1.2;color:${config.textColor}}
+    .subtext{font-size:15px;line-height:1.7;color:${config.textColor};opacity:.8}
+    .cta{display:inline-block;padding:11px 26px;border-radius:999px;background:${config.accentColor};color:${config.bgColor};font-size:13px;font-weight:700;margin-top:6px}
+    @media print{body{background:white}}</style></head>
+    <body><div class="post">
+    ${config.showBrand ? `<div class="brand">${config.brandName}</div>` : ''}
+    <div class="headline">${config.headline}</div>
+    <div class="subtext">${config.subtext}</div>
+    ${config.showCta ? `<div><span class="cta">${config.cta}</span></div>` : ''}
+    </div><script>window.onload=()=>window.print()<\/script></body></html>`);
+    pw.document.close();
+  };
+
+  const handleCopy = async () => {
+    if (!config) return;
+    const text = [config.headline, config.subtext, config.showCta ? config.cta : ''].filter(Boolean).join('\n\n');
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const reset = () => { setStep(0); setSelected(null); setConfig(null); };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* Navbar */}
+      <nav className="fixed inset-x-0 top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
           <div className="flex items-center gap-2">
             <LogoMark size={32} />
             <span className="font-bold text-blue-900 text-lg">DDoc</span>
           </div>
-
-          {/* Right side */}
           <div className="flex items-center gap-3">
-            {/* Language switcher */}
             <div className="hidden sm:flex items-center gap-1">
-              {LANGUAGES.map(lang => (
-                <button
-                  key={lang.code}
-                  onClick={() => i18n.changeLanguage(lang.code)}
-                  className={`text-xs px-2 py-1 rounded transition-colors ${
-                    i18n.language === lang.code
-                      ? 'bg-blue-100 text-blue-900 font-semibold'
-                      : 'text-gray-500 hover:text-gray-900'
-                  }`}
-                >
-                  {lang.label}
+              {['en', 'fi', 'sv'].map(code => (
+                <button key={code} onClick={() => i18n.changeLanguage(code)}
+                  className={cn('text-xs px-2 py-1 rounded transition-colors uppercase',
+                    i18n.language === code ? 'bg-blue-100 text-blue-900 font-semibold' : 'text-gray-500 hover:text-gray-900')}>
+                  {code}
                 </button>
               ))}
             </div>
-            <Link to="/login">
-              <Button variant="ghost" size="sm" className="text-gray-700 hover:text-blue-900 hover:bg-blue-50">
-                {t('landing.ctaSignIn')}
-              </Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm" className="bg-blue-900 hover:bg-blue-800 text-white">
-                {t('landing.ctaStart')}
-              </Button>
-            </Link>
+            <Link to="/login"><Button variant="ghost" size="sm">Sign In</Button></Link>
+            <Link to="/signup"><Button size="sm" className="bg-blue-900 hover:bg-blue-800 text-white">Get Started</Button></Link>
           </div>
         </div>
       </nav>
 
-      {/* ── Hero ── */}
-      <section className={`pb-24 px-4 sm:px-6 text-center bg-blue-50 transition-all duration-200 ${showBanner ? 'pt-44' : 'pt-36'}`}>
-        <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-white border border-indigo-200 px-4 py-1.5 rounded-full text-sm text-indigo-700 mb-8 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{t('landing.featureBadge')}</span>
+      <main className="flex-1 pt-16">
+        {/* Hero */}
+        <div className="bg-gradient-to-br from-blue-950 to-indigo-900 text-white text-center py-14 px-4">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full text-sm text-indigo-200 mb-5">
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+            Social Media Post Generator
           </div>
-
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight text-blue-900">
-            {t('landing.heroTitle')}
-            <br />
-            <span className="text-blue-700">
-              {t('landing.heroTitleAccent')}
-            </span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-            {t('landing.heroSubtitle')}
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup">
-              <Button size="lg" className="w-full sm:w-auto bg-blue-900 hover:bg-blue-800 text-white font-semibold px-8 py-3 text-base shadow-md">
-                {t('landing.ctaStart')}
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto border-blue-300 text-blue-900 hover:bg-blue-50 px-8 py-3 text-base">
-                {t('landing.ctaSignIn')}
-              </Button>
-            </Link>
-          </div>
-
-          {/* Mini stats */}
-          <div className="flex flex-wrap justify-center gap-8 mt-16 text-sm text-gray-600">
-            {[
-              { label: t('landing.miniStat1'), icon: <CheckCircle className="w-4 h-4 text-green-600" /> },
-              { label: t('landing.miniStat2'), icon: <CheckCircle className="w-4 h-4 text-green-600" /> },
-              { label: t('landing.miniStat3'), icon: <CheckCircle className="w-4 h-4 text-green-600" /> },
-            ].map(item => (
-              <span key={item.label} className="flex items-center gap-1.5">
-                {item.icon} {item.label}
-              </span>
-            ))}
-          </div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">Create Stunning Posts</h1>
+          <p className="text-indigo-200 max-w-xl mx-auto text-lg">Pick a template, customise it your way, then download or share in seconds.</p>
         </div>
-      </section>
 
-      {/* ── What's New (v2.0 release) ── */}
-      <section id="whats-new" className="py-24 px-4 sm:px-6 bg-gradient-to-br from-blue-950 via-indigo-950 to-blue-900">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full text-sm text-indigo-200 mb-6 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-              <span>{t('landing.whatsNewBadge')}</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('landing.whatsNewTitle')}</h2>
-            <p className="text-indigo-200 max-w-2xl mx-auto leading-relaxed">{t('landing.whatsNewSubtitle')}</p>
-          </div>
+        {/* Wizard */}
+        <div className="max-w-5xl mx-auto px-4 py-10">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {whatsNewItems.map((item) => (
-              <div
-                key={item.title}
-                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-colors duration-200 backdrop-blur-sm"
-              >
-                <div className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center text-white mb-4 shadow-md`}>
-                  {item.icon}
-                </div>
-                <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
-                <p className="text-indigo-200 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section className="py-24 px-4 sm:px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-blue-900 mb-4">{t('landing.featuresTitle')}</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">{t('landing.featuresSubtitle')}</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feat) => (
-              <div key={feat.title} className="bg-white border border-gray-200 rounded-xl p-6 group hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                <div className={`w-12 h-12 rounded-xl ${feat.bg} flex items-center justify-center text-white mb-4 shadow-sm group-hover:scale-110 transition-transform`}>
-                  {feat.icon}
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{feat.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{feat.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How it works ── */}
-      <section className="py-24 px-4 sm:px-6 bg-blue-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-blue-900 mb-4">{t('landing.howTitle')}</h2>
-            <p className="text-gray-500">{t('landing.howSubtitle')}</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {steps.map((step, i) => (
-              <div key={step.num} className="relative flex flex-col items-center text-center">
-                {/* Connector line */}
-                {i < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-[calc(50%+2.5rem)] w-[calc(100%-5rem)] h-px bg-blue-200" />
-                )}
-                <div className="w-16 h-16 rounded-2xl bg-white border-2 border-blue-200 flex items-center justify-center mb-5 relative z-10 shadow-sm">
-                  <span className="text-2xl font-black text-blue-900">
-                    {step.num}
+          {/* Step indicator */}
+          <div className="flex items-center justify-center mb-10">
+            {STEPS.map((s, idx) => (
+              <React.Fragment key={s.num}>
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className={cn(
+                    'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300',
+                    step > idx ? 'bg-green-500 text-white' :
+                    step === idx ? 'bg-blue-900 text-white ring-4 ring-blue-200' :
+                    'bg-gray-200 text-gray-500'
+                  )}>
+                    {step > idx ? <Check className="w-4 h-4" /> : s.num}
+                  </div>
+                  <span className={cn('text-xs font-medium whitespace-nowrap', step === idx ? 'text-blue-900' : 'text-gray-400')}>
+                    {s.label}
                   </span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{step.desc}</p>
-              </div>
+                {idx < STEPS.length - 1 && (
+                  <div className={cn('w-16 sm:w-24 h-0.5 mb-5 mx-1 transition-all duration-300', step > idx ? 'bg-green-500' : 'bg-gray-200')} />
+                )}
+              </React.Fragment>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ── CTA Banner ── */}
-      <section className="py-24 px-4 sm:px-6 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-blue-900 rounded-2xl p-10 sm:p-14 text-center shadow-lg">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{t('landing.ctaBannerTitle')}</h2>
-            <p className="text-blue-200 mb-8 text-lg">{t('landing.ctaBannerSubtitle')}</p>
-            <Link to="/signup">
-              <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50 font-semibold px-10 py-3 text-base shadow-md">
-                {t('landing.ctaBannerButton')}
-                <ChevronRight className="w-4 h-4 ml-1" />
+          {/* ── Step 0: Template Gallery ── */}
+          {step === 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Choose a Template</h2>
+              <p className="text-gray-500 text-center mb-8">Select the style and format that fits your platform</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {TEMPLATES.map(tpl => {
+                  const isSelected = selected?.id === tpl.id;
+                  const bg = tpl.defaults.useGradient
+                    ? `linear-gradient(135deg, ${tpl.defaults.bgColor}, ${tpl.defaults.bgColor2})`
+                    : tpl.defaults.bgColor;
+                  return (
+                    <button key={tpl.id} onClick={() => pick(tpl)}
+                      className={cn('text-left rounded-2xl border-2 p-1 transition-all duration-200 hover:shadow-lg focus:outline-none',
+                        isSelected ? 'border-blue-600 shadow-blue-100 shadow-lg' : 'border-transparent hover:border-gray-200')}>
+                      {/* Mini post preview */}
+                      <div className="rounded-xl overflow-hidden relative"
+                        style={{ aspectRatio: `${tpl.aspectW}/${tpl.aspectH}`, background: bg }}>
+                        <div className="absolute inset-0 flex flex-col justify-center p-4 gap-2">
+                          {tpl.defaults.showBrand && (
+                            <div className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tpl.defaults.accentColor }}>
+                              {tpl.defaults.brandName}
+                            </div>
+                          )}
+                          <div className="text-xs font-bold leading-tight" style={{ color: tpl.defaults.textColor }}>
+                            {tpl.defaults.headline}
+                          </div>
+                          <div className="text-[9px] leading-relaxed opacity-75" style={{ color: tpl.defaults.textColor }}>
+                            {tpl.defaults.subtext}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                            <Check className="w-3.5 h-3.5 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Card footer */}
+                      <div className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-semibold text-gray-900 text-sm">{tpl.name}</span>
+                          <span className={cn('text-[10px] font-bold text-white px-2 py-0.5 rounded-full', tpl.platformColor)}>
+                            {tpl.platform}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">{tpl.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 1: Customise ── */}
+          {step === 1 && selected && config && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Customise Your Post</h2>
+              <p className="text-gray-500 text-center mb-8">Adjust text, colours, and style to match your brand</p>
+              <div className="flex flex-col lg:flex-row gap-8 items-start">
+                {/* Live preview */}
+                <div className="flex-shrink-0 flex flex-col items-center gap-2 lg:sticky lg:top-24">
+                  <PostPreview template={selected} config={config} displayWidth={280} />
+                  <span className="text-xs text-gray-400 font-medium">{selected.name} · {selected.platform}</span>
+                </div>
+
+                {/* Form */}
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Headline</Label>
+                    <Input value={config.headline} onChange={e => patch({ headline: e.target.value })} className="text-sm" />
+                  </div>
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Subtext</Label>
+                    <Textarea value={config.subtext} onChange={e => patch({ subtext: e.target.value })} rows={3} className="text-sm resize-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Brand / Handle</Label>
+                    <Input value={config.brandName} onChange={e => patch({ brandName: e.target.value })} className="text-sm" disabled={!config.showBrand} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">CTA Button Text</Label>
+                    <Input value={config.cta} onChange={e => patch({ cta: e.target.value })} className="text-sm" disabled={!config.showCta} />
+                  </div>
+
+                  {/* Background colour */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Background</Label>
+                    <div className="flex gap-2 items-center">
+                      <input type="color" value={config.bgColor} onChange={e => patch({ bgColor: e.target.value })}
+                        className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                      {config.useGradient && (
+                        <input type="color" value={config.bgColor2} onChange={e => patch({ bgColor2: e.target.value })}
+                          className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                      )}
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <Switch checked={config.useGradient} onCheckedChange={v => patch({ useGradient: v })} />
+                        <span className="text-xs text-gray-500">Gradient</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Text / accent */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Text · Accent</Label>
+                    <div className="flex gap-2 items-center">
+                      <input type="color" value={config.textColor} onChange={e => patch({ textColor: e.target.value })}
+                        title="Text colour" className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                      <input type="color" value={config.accentColor} onChange={e => patch({ accentColor: e.target.value })}
+                        title="Accent colour" className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                      <span className="text-xs text-gray-400 ml-1">text · accent</span>
+                    </div>
+                  </div>
+
+                  {/* Font */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Font Style</Label>
+                    <div className="flex gap-2">
+                      {(['sans', 'serif', 'mono'] as const).map(f => (
+                        <button key={f} onClick={() => patch({ font: f })}
+                          className={cn('flex-1 py-2 text-xs rounded-lg border font-medium capitalize transition-colors',
+                            config.font === f ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-300')}>
+                          {f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Visibility toggles */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Show / Hide</Label>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Switch checked={config.showBrand} onCheckedChange={v => patch({ showBrand: v })} />
+                        <span className="text-sm text-gray-600">Brand name</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch checked={config.showCta} onCheckedChange={v => patch({ showCta: v })} />
+                        <span className="text-sm text-gray-600">CTA button</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Download & Share ── */}
+          {step === 2 && selected && config && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Ready to Share!</h2>
+              <p className="text-gray-500 text-center mb-8">Your post is ready — download it or copy the caption text.</p>
+              <div className="flex flex-col items-center gap-8">
+                <PostPreview template={selected} config={config} displayWidth={360} />
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+                  <Button onClick={handleDownload} size="lg" className="flex-1 bg-blue-900 hover:bg-blue-800 text-white gap-2">
+                    <Download className="w-4 h-4" /> Download
+                  </Button>
+                  <Button onClick={handleCopy} variant="outline" size="lg" className="flex-1 gap-2">
+                    {copied ? <CheckCheck className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                    {copied ? 'Copied!' : 'Copy Text'}
+                  </Button>
+                </div>
+
+                {/* Caption preview */}
+                <div className="w-full max-w-sm bg-white rounded-xl border border-gray-200 p-5">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Caption Preview</p>
+                  <p className="font-bold text-gray-900 mb-2">{config.headline}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{config.subtext}</p>
+                  {config.showCta && <p className="mt-3 text-blue-700 font-semibold text-sm">→ {config.cta}</p>}
+                  {config.showBrand && <p className="mt-3 text-gray-400 text-xs">{config.brandName}</p>}
+                </div>
+
+                <button onClick={reset} className="text-sm text-blue-700 hover:text-blue-900 underline underline-offset-2 transition-colors">
+                  ← Create another post
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className={cn('flex mt-10', step === 0 ? 'justify-end' : 'justify-between')}>
+            {step > 0 && (
+              <Button variant="outline" onClick={back} className="gap-2">
+                <ArrowLeft className="w-4 h-4" /> Back
               </Button>
-            </Link>
+            )}
+            {step < 2 && (
+              <Button onClick={next} disabled={step === 0 && !selected}
+                className="bg-blue-900 hover:bg-blue-800 text-white gap-2">
+                {step === 0 ? 'Customise This Template' : 'Continue to Download'}
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
-      </section>
+      </main>
 
-      {/* ── Footer ── */}
-      <footer className="mt-auto py-8 px-4 sm:px-6 border-t border-gray-200 bg-white">
+      {/* Footer */}
+      <footer className="py-8 px-4 sm:px-6 border-t border-gray-200 bg-white mt-auto">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-2">
             <LogoMark size={20} />
-            <span>DDoc — {t('landing.footerBuiltWith')}</span>
+            <span>DDoc</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="hover:text-blue-900 transition-colors">{t('landing.ctaSignIn')}</Link>
-            <Link to="/signup" className="hover:text-blue-900 transition-colors">{t('landing.ctaStart')}</Link>
+            <Link to="/login" className="hover:text-blue-900 transition-colors">Sign In</Link>
+            <Link to="/signup" className="hover:text-blue-900 transition-colors">Get Started</Link>
             <Link to="/api" className="hover:text-blue-900 transition-colors">API</Link>
           </div>
         </div>
