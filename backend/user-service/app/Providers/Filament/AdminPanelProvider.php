@@ -10,6 +10,7 @@ use App\Filament\Resources\NotificationResource;
 use App\Filament\Resources\OrganizationResource;
 use App\Filament\Resources\PackageResource;
 use App\Filament\Resources\PackageUpgradeRequestResource;
+use App\Filament\Resources\LandingTemplateResource;
 use App\Filament\Resources\TemplateResource;
 use App\Filament\Resources\UserResource;
 use App\Filament\Resources\WebhookResource;
@@ -54,6 +55,7 @@ class AdminPanelProvider extends PanelProvider
                 AuditLogResource::class,
                 TemplateResource::class,
                 FileResource::class,
+                LandingTemplateResource::class,
             ])
             ->pages([
                 KlarnaSettings::class,

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ArrowLeft, Download, Copy, CheckCheck,
@@ -44,12 +44,12 @@ interface Template {
 
 // ── Templates ─────────────────────────────────────────────────────────────────
 
-const TEMPLATES: Template[] = [
+const FALLBACK_TEMPLATES: Template[] = [
   {
     id: 'bold-gradient',
     name: 'Bold Gradient',
     platform: 'Instagram',
-    platformColor: 'bg-pink-500',
+    platformColor: '#ec4899',
     description: '1:1 square with vibrant gradient background',
     aspectW: 1, aspectH: 1, layout: 'centered',
     defaults: {
@@ -62,7 +62,7 @@ const TEMPLATES: Template[] = [
     id: 'minimal-clean',
     name: 'Minimal Clean',
     platform: 'Instagram',
-    platformColor: 'bg-pink-500',
+    platformColor: '#ec4899',
     description: '1:1 square with light, elegant white design',
     aspectW: 1, aspectH: 1, layout: 'centered',
     defaults: {
@@ -75,7 +75,7 @@ const TEMPLATES: Template[] = [
     id: 'tweet-card',
     name: 'Tweet Card',
     platform: 'Twitter / X',
-    platformColor: 'bg-sky-500',
+    platformColor: '#0ea5e9',
     description: '16:9 wide card optimised for X / Twitter',
     aspectW: 16, aspectH: 9, layout: 'centered',
     defaults: {
@@ -88,7 +88,7 @@ const TEMPLATES: Template[] = [
     id: 'linkedin-pro',
     name: 'Professional',
     platform: 'LinkedIn',
-    platformColor: 'bg-blue-600',
+    platformColor: '#2563eb',
     description: '1.91:1 banner for LinkedIn posts',
     aspectW: 1.91, aspectH: 1, layout: 'bottom',
     defaults: {
@@ -101,7 +101,7 @@ const TEMPLATES: Template[] = [
     id: 'story-vibrant',
     name: 'Vibrant Story',
     platform: 'Instagram Story',
-    platformColor: 'bg-orange-500',
+    platformColor: '#f97316',
     description: '9:16 vertical story with bold colours',
     aspectW: 9, aspectH: 16, layout: 'centered',
     defaults: {
@@ -114,7 +114,7 @@ const TEMPLATES: Template[] = [
     id: 'quote-card',
     name: 'Quote Card',
     platform: 'All Platforms',
-    platformColor: 'bg-slate-600',
+    platformColor: '#475569',
     description: '1:1 dark inspirational quote design',
     aspectW: 1, aspectH: 1, layout: 'quote',
     defaults: {
@@ -226,6 +226,14 @@ const LandingPage: React.FC = () => {
   const [selected, setSelected] = useState<Template | null>(null);
   const [config, setConfig] = useState<PostConfig | null>(null);
   const [copied, setCopied] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>(FALLBACK_TEMPLATES);
+
+  useEffect(() => {
+    fetch('/api/landing-templates')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((data: Template[]) => { if (Array.isArray(data) && data.length > 0) setTemplates(data); })
+      .catch(() => { /* keep fallback */ });
+  }, []);
 
   const pick = (tpl: Template) => {
     setSelected(tpl);
@@ -339,7 +347,7 @@ const LandingPage: React.FC = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Choose a Template</h2>
               <p className="text-gray-500 text-center mb-8">Select the style and format that fits your platform</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {TEMPLATES.map(tpl => {
+                {templates.map(tpl => {
                   const isSelected = selected?.id === tpl.id;
                   const bg = tpl.defaults.useGradient
                     ? `linear-gradient(135deg, ${tpl.defaults.bgColor}, ${tpl.defaults.bgColor2})`
@@ -374,7 +382,8 @@ const LandingPage: React.FC = () => {
                       <div className="p-3">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-semibold text-gray-900 text-sm">{tpl.name}</span>
-                          <span className={cn('text-[10px] font-bold text-white px-2 py-0.5 rounded-full', tpl.platformColor)}>
+                          <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: tpl.platformColor }}>
                             {tpl.platform}
                           </span>
                         </div>
