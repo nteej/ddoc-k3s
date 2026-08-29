@@ -68,7 +68,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/user-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/user-service:latest
-          cache-from: type=gha,scope=user-service
+          no-cache: true
           cache-to: type=gha,mode=max,scope=user-service
           provenance: false
 
@@ -97,7 +97,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/template-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/template-service:latest
-          cache-from: type=gha,scope=template-service
+          no-cache: true
           cache-to: type=gha,mode=max,scope=template-service
           provenance: false
 
@@ -126,7 +126,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/file-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/file-service:latest
-          cache-from: type=gha,scope=file-service
+          no-cache: true
           cache-to: type=gha,mode=max,scope=file-service
           provenance: false
 
@@ -155,7 +155,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/audit-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/audit-service:latest
-          cache-from: type=gha,scope=audit-service
+          no-cache: true
           cache-to: type=gha,mode=max,scope=audit-service
           provenance: false
 
@@ -184,7 +184,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/api-key-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/api-key-service:latest
-          cache-from: type=gha,scope=api-key-service
+          no-cache: true
           cache-to: type=gha,mode=max,scope=api-key-service
           provenance: false
 
@@ -213,7 +213,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/webhook-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/webhook-service:latest
-          cache-from: type=gha,scope=webhook-service
+          no-cache: true
           cache-to: type=gha,mode=max,scope=webhook-service
           provenance: false
 
@@ -242,7 +242,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/notification-service:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/notification-service:latest
-          cache-from: type=gha,scope=notification-service
+          no-cache: true
           cache-to: type=gha,mode=max,scope=notification-service
           provenance: false
 
