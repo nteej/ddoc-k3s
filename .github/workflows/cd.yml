@@ -271,7 +271,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/frontend:${{ needs.resolve-tag.outputs.tag }}
             ${{ env.REGISTRY }}/frontend:latest
-          cache-from: type=gha,scope=frontend
+          no-cache: true
           cache-to: type=gha,mode=max,scope=frontend
           provenance: false
 
