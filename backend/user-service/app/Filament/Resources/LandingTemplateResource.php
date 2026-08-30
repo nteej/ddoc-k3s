@@ -59,7 +59,7 @@ class LandingTemplateResource extends Resource
                         ->columnSpanFull(),
                 ]),
 
-            Section::make('Layout')
+            Section::make('Layout & Export Dimensions')
                 ->columns(3)
                 ->schema([
                     TextInput::make('aspect_w')
@@ -83,6 +83,31 @@ class LandingTemplateResource extends Resource
                             'bottom'   => 'Bottom (LinkedIn style)',
                             'quote'    => 'Quote',
                         ]),
+
+                    TextInput::make('export_width')
+                        ->label('Export Width (px)')
+                        ->integer()
+                        ->required()
+                        ->default(1080)
+                        ->minValue(100)
+                        ->maxValue(4096)
+                        ->helperText('Native pixel width of the downloaded image'),
+
+                    TextInput::make('export_height')
+                        ->label('Export Height (px)')
+                        ->integer()
+                        ->required()
+                        ->default(1080)
+                        ->minValue(100)
+                        ->maxValue(4096)
+                        ->helperText('Native pixel height of the downloaded image'),
+
+                    TextInput::make('share_url_template')
+                        ->label('Share URL Template')
+                        ->maxLength(400)
+                        ->placeholder('https://twitter.com/intent/tweet?text={text}')
+                        ->helperText('Use {text} and {url} as placeholders')
+                        ->columnSpanFull(),
 
                     TextInput::make('sort_order')
                         ->label('Sort Order')

@@ -11,7 +11,8 @@ class LandingTemplate extends Model
 
     protected $fillable = [
         'name', 'platform', 'platform_color', 'description',
-        'aspect_w', 'aspect_h', 'layout', 'sort_order', 'is_active',
+        'aspect_w', 'aspect_h', 'export_width', 'export_height', 'share_url_template',
+        'layout', 'sort_order', 'is_active',
         'headline', 'subtext', 'cta',
         'bg_color', 'bg_color2', 'use_gradient',
         'text_color', 'accent_color', 'font',
@@ -21,6 +22,8 @@ class LandingTemplate extends Model
     protected $casts = [
         'aspect_w'     => 'float',
         'aspect_h'     => 'float',
+        'export_width'  => 'integer',
+        'export_height' => 'integer',
         'is_active'    => 'boolean',
         'use_gradient' => 'boolean',
         'show_cta'     => 'boolean',
@@ -41,9 +44,12 @@ class LandingTemplate extends Model
             'platform'      => $this->platform,
             'platformColor' => $this->platform_color,
             'description'   => $this->description,
-            'aspectW'       => (float) $this->aspect_w,
-            'aspectH'       => (float) $this->aspect_h,
-            'layout'        => $this->layout,
+            'aspectW'          => (float) $this->aspect_w,
+            'aspectH'          => (float) $this->aspect_h,
+            'exportWidth'      => $this->export_width,
+            'exportHeight'     => $this->export_height,
+            'shareUrlTemplate' => $this->share_url_template,
+            'layout'           => $this->layout,
             'defaults'      => [
                 'headline'    => $this->headline,
                 'subtext'     => $this->subtext,
