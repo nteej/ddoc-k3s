@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ArrowLeft, Download, Copy, CheckCheck,
-  Sparkles, Check, Layout, Palette,
+  Sparkles, Check, Layout, Palette, Search, ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -317,12 +317,17 @@ interface WizardSectionProps {
   section: LandingSection;
 }
 
+const PAGE_SIZE = 6;
+
 const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<Template | null>(null);
   const [config, setConfig] = useState<PostConfig | null>(null);
   const [copied, setCopied] = useState(false);
   const [templates, setTemplates] = useState<Template[]>(FALLBACK_TEMPLATES);
+  const [search, setSearch] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     fetch('/api/landing-templates')
@@ -330,6 +335,30 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
       .then((data: Template[]) => { if (Array.isArray(data) && data.length > 0) setTemplates(data); })
       .catch(() => { /* keep fallback */ });
   }, []);
+
+  const platforms = useMemo(
+    () => Array.from(new Set(templates.map(t => t.platform))).sort(),
+    [templates],
+  );
+
+  const filtered = useMemo(() => {
+    let result = templates;
+    if (platformFilter) result = result.filter(t => t.platform === platformFilter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(t =>
+        t.name.toLowerCase().includes(q) ||
+        t.platform.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [templates, search, platformFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageTemplates = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  useEffect(() => { setPage(0); }, [search, platformFilter]);
 
   const pick = (tpl: Template) => {
     setSelected(tpl);
@@ -404,54 +433,129 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
       {step === 0 && (
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Choose a Template</h2>
-          <p className="text-gray-500 text-center mb-8">Select the style and format that fits your platform</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {templates.map(tpl => {
-              const isSelected = selected?.id === tpl.id;
-              const bg = tpl.defaults.useGradient
-                ? `linear-gradient(135deg, ${tpl.defaults.bgColor}, ${tpl.defaults.bgColor2})`
-                : tpl.defaults.bgColor;
-              return (
-                <button key={tpl.id} onClick={() => pick(tpl)}
-                  className={cn('text-left rounded-2xl border-2 p-1 transition-all duration-200 hover:shadow-lg focus:outline-none',
-                    isSelected ? 'border-blue-600 shadow-blue-100 shadow-lg' : 'border-transparent hover:border-gray-200')}>
-                  {/* Mini post preview */}
-                  <div className="rounded-xl overflow-hidden relative"
-                    style={{ aspectRatio: `${tpl.aspectW}/${tpl.aspectH}`, background: bg }}>
-                    <div className="absolute inset-0 flex flex-col justify-center p-4 gap-2">
-                      {tpl.defaults.showBrand && (
-                        <div className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tpl.defaults.accentColor }}>
-                          {tpl.defaults.brandName}
+          <p className="text-gray-500 text-center mb-6">Select the style and format that fits your platform</p>
+
+          {/* Search + filter bar */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search templates…"
+                className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Platform filter pills */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <button
+              onClick={() => setPlatformFilter('')}
+              className={cn('px-3 py-1 text-xs rounded-full border font-medium transition-colors',
+                platformFilter === '' ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-400 bg-white')}>
+              All
+            </button>
+            {platforms.map(p => (
+              <button key={p}
+                onClick={() => setPlatformFilter(prev => prev === p ? '' : p)}
+                className={cn('px-3 py-1 text-xs rounded-full border font-medium transition-colors',
+                  platformFilter === p ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-400 bg-white')}>
+                {p}
+              </button>
+            ))}
+          </div>
+
+          {/* Grid */}
+          {pageTemplates.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <Search className="w-8 h-8 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">No templates match your search.</p>
+              <button onClick={() => { setSearch(''); setPlatformFilter(''); }} className="mt-3 text-blue-700 text-xs underline">Clear filters</button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {pageTemplates.map(tpl => {
+                const isSelected = selected?.id === tpl.id;
+                const bg = tpl.defaults.useGradient
+                  ? `linear-gradient(135deg, ${tpl.defaults.bgColor}, ${tpl.defaults.bgColor2})`
+                  : tpl.defaults.bgColor;
+                return (
+                  <button key={tpl.id} onClick={() => pick(tpl)}
+                    className={cn('text-left rounded-2xl border-2 p-1 transition-all duration-200 hover:shadow-lg focus:outline-none',
+                      isSelected ? 'border-blue-600 shadow-blue-100 shadow-lg' : 'border-transparent hover:border-gray-200')}>
+                    <div className="rounded-xl overflow-hidden relative"
+                      style={{ aspectRatio: `${tpl.aspectW}/${tpl.aspectH}`, background: bg }}>
+                      <div className="absolute inset-0 flex flex-col justify-center p-4 gap-2">
+                        {tpl.defaults.showBrand && (
+                          <div className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tpl.defaults.accentColor }}>
+                            {tpl.defaults.brandName}
+                          </div>
+                        )}
+                        <div className="text-xs font-bold leading-tight" style={{ color: tpl.defaults.textColor }}>
+                          {tpl.defaults.headline}
+                        </div>
+                        <div className="text-[9px] leading-relaxed opacity-75" style={{ color: tpl.defaults.textColor }}>
+                          {tpl.defaults.subtext}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                          <Check className="w-3.5 h-3.5 text-white" />
                         </div>
                       )}
-                      <div className="text-xs font-bold leading-tight" style={{ color: tpl.defaults.textColor }}>
-                        {tpl.defaults.headline}
-                      </div>
-                      <div className="text-[9px] leading-relaxed opacity-75" style={{ color: tpl.defaults.textColor }}>
-                        {tpl.defaults.subtext}
-                      </div>
                     </div>
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                        <Check className="w-3.5 h-3.5 text-white" />
+                    <div className="p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-gray-900 text-sm">{tpl.name}</span>
+                        <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: tpl.platformColor }}>
+                          {tpl.platform}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  {/* Card footer */}
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-gray-900 text-sm">{tpl.name}</span>
-                      <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: tpl.platformColor }}>
-                        {tpl.platform}
-                      </span>
+                      <p className="text-xs text-gray-500">{tpl.description}</p>
                     </div>
-                    <p className="text-xs text-gray-500">{tpl.description}</p>
-                  </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+              <span className="text-xs text-gray-400">
+                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage(p => Math.max(p - 1, 0))}
+                  disabled={page === 0}
+                  className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
-              );
-            })}
-          </div>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button key={i} onClick={() => setPage(i)}
+                    className={cn('w-7 h-7 text-xs rounded-lg border font-medium transition-colors',
+                      page === i ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:bg-gray-50')}>
+                    {i + 1}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage(p => Math.min(p + 1, totalPages - 1))}
+                  disabled={page >= totalPages - 1}
+                  className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
