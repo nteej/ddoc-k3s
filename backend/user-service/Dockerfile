@@ -21,7 +21,7 @@ COPY . .
 # composer update regenerates the lock file (needed when composer.json is edited directly)
 RUN COMPOSER_MEMORY_LIMIT=-1 composer update --no-interaction --prefer-dist --optimize-autoloader
 
-RUN php artisan filament:assets:publish 2>/dev/null || true
+RUN APP_KEY=base64:dGVzdGtleXRlc3RrZXl0ZXN0a2V5dGVzdGtleQ== php artisan filament:assets
 
 RUN chown -R www-data:www-data /var/www/html
 
