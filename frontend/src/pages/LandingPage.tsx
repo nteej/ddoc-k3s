@@ -42,7 +42,100 @@ interface Template {
   defaults: PostConfig;
 }
 
-// ── Templates ─────────────────────────────────────────────────────────────────
+interface SectionItem {
+  title: string;
+  description: string;
+  icon?: string;
+}
+
+interface LandingSection {
+  id: string;
+  type: 'hero' | 'features' | 'how_it_works' | 'cta_banner' | 'wizard';
+  sortOrder: number;
+  isActive: boolean;
+  heading: string | null;
+  subheading: string | null;
+  items: SectionItem[];
+  config: Record<string, string>;
+}
+
+// ── Fallback sections (mirrors seeder data) ───────────────────────────────────
+
+const FALLBACK_SECTIONS: LandingSection[] = [
+  {
+    id: 'hero',
+    type: 'hero',
+    sortOrder: 0,
+    isActive: true,
+    heading: 'Generate Documents at Scale',
+    subheading: 'Create reusable templates with dynamic fields. Preview documents live as you type, then generate professional PDFs — instantly, in bulk, or via API.',
+    items: [],
+    config: {
+      ctaStart: '/signup',
+      ctaSignIn: '/login',
+      badge: 'v2.0.0 is live · Enterprise SSO · Live preview · API keys',
+    },
+  },
+  {
+    id: 'wizard',
+    type: 'wizard',
+    sortOrder: 1,
+    isActive: true,
+    heading: 'Create Your Social Media Post',
+    subheading: 'Pick a template, customise it, and download.',
+    items: [],
+    config: {},
+  },
+  {
+    id: 'features',
+    type: 'features',
+    sortOrder: 2,
+    isActive: true,
+    heading: 'Everything you need',
+    subheading: 'A complete platform for document automation — from template creation to live preview, bulk generation, and email delivery.',
+    items: [
+      { title: 'Template Builder',     description: 'Build rich document templates with a WYSIWYG editor. Add sections, reorder them with drag-and-drop, and reuse sections across multiple templates.' },
+      { title: 'Dynamic Fields',       description: 'Define typed fields (text, number, date, select, email, long text) and embed them as placeholders. Configure and fill them all from the Generate page.' },
+      { title: 'Async PDF Generation', description: "Queue documents for async PDF generation. Get notified when they're ready and download them directly from the app — no waiting around." },
+      { title: 'Batch Processing',     description: 'Upload an Excel spreadsheet and generate one PDF per row across any number of templates — in a single operation.' },
+      { title: 'REST API',             description: 'Integrate document generation into your own workflows via a clean REST API. Full documentation is built into the app.' },
+      { title: 'Multi-language UI',    description: 'The interface is available in English, Finnish and Swedish. Language preference is saved automatically.' },
+      { title: 'Live PDF Preview',     description: 'See the document update in real time as you fill in each field. Unfilled placeholders are highlighted so nothing gets missed before generating.' },
+      { title: 'API Key Access',       description: 'Generate and manage API keys for programmatic document generation. Integrate DDoc into any workflow without session-based authentication.' },
+      { title: 'Email Delivery',       description: 'Send generated PDFs directly from the app to any email address. Powered by Kafka for reliable async delivery.' },
+    ],
+    config: {},
+  },
+  {
+    id: 'how_it_works',
+    type: 'how_it_works',
+    sortOrder: 3,
+    isActive: true,
+    heading: 'How it works',
+    subheading: 'From template to finished document in three simple steps.',
+    items: [
+      { title: 'Build a Template',  description: 'Create a template, add sections with your HTML content, and insert dynamic placeholders like #CLIENT_NAME# or #CONTRACT_DATE#.' },
+      { title: 'Configure Fields',  description: 'Open the Generate page and go to the Fields tab. Register your tags with types and contexts — they instantly appear as typed form fields with a live preview alongside.' },
+      { title: 'Generate & Share',  description: 'Fill in the field values, preview the result live, then click Generate. Documents are queued and processed asynchronously — download them or send directly via email.' },
+    ],
+    config: {},
+  },
+  {
+    id: 'cta_banner',
+    type: 'cta_banner',
+    sortOrder: 4,
+    isActive: true,
+    heading: 'Ready to automate your documents?',
+    subheading: 'Create your account and start generating professional PDFs today.',
+    items: [],
+    config: {
+      buttonText: 'Create Free Account',
+      buttonUrl: '/signup',
+    },
+  },
+];
+
+// ── Templates (for the wizard) ────────────────────────────────────────────────
 
 const FALLBACK_TEMPLATES: Template[] = [
   {
@@ -218,10 +311,13 @@ const STEPS = [
   { num: 3, label: 'Download & Share', Icon: Download },
 ];
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Wizard Section ────────────────────────────────────────────────────────────
 
-const LandingPage: React.FC = () => {
-  const { i18n } = useTranslation();
+interface WizardSectionProps {
+  section: LandingSection;
+}
+
+const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<Template | null>(null);
   const [config, setConfig] = useState<PostConfig | null>(null);
@@ -279,6 +375,408 @@ const LandingPage: React.FC = () => {
   const reset = () => { setStep(0); setSelected(null); setConfig(null); };
 
   return (
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      {/* Step indicator */}
+      <div className="flex items-center justify-center mb-10">
+        {STEPS.map((s, idx) => (
+          <React.Fragment key={s.num}>
+            <div className="flex flex-col items-center gap-1.5">
+              <div className={cn(
+                'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300',
+                step > idx ? 'bg-green-500 text-white' :
+                step === idx ? 'bg-blue-900 text-white ring-4 ring-blue-200' :
+                'bg-gray-200 text-gray-500'
+              )}>
+                {step > idx ? <Check className="w-4 h-4" /> : s.num}
+              </div>
+              <span className={cn('text-xs font-medium whitespace-nowrap', step === idx ? 'text-blue-900' : 'text-gray-400')}>
+                {s.label}
+              </span>
+            </div>
+            {idx < STEPS.length - 1 && (
+              <div className={cn('w-16 sm:w-24 h-0.5 mb-5 mx-1 transition-all duration-300', step > idx ? 'bg-green-500' : 'bg-gray-200')} />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+
+      {/* ── Step 0: Template Gallery ── */}
+      {step === 0 && (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Choose a Template</h2>
+          <p className="text-gray-500 text-center mb-8">Select the style and format that fits your platform</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {templates.map(tpl => {
+              const isSelected = selected?.id === tpl.id;
+              const bg = tpl.defaults.useGradient
+                ? `linear-gradient(135deg, ${tpl.defaults.bgColor}, ${tpl.defaults.bgColor2})`
+                : tpl.defaults.bgColor;
+              return (
+                <button key={tpl.id} onClick={() => pick(tpl)}
+                  className={cn('text-left rounded-2xl border-2 p-1 transition-all duration-200 hover:shadow-lg focus:outline-none',
+                    isSelected ? 'border-blue-600 shadow-blue-100 shadow-lg' : 'border-transparent hover:border-gray-200')}>
+                  {/* Mini post preview */}
+                  <div className="rounded-xl overflow-hidden relative"
+                    style={{ aspectRatio: `${tpl.aspectW}/${tpl.aspectH}`, background: bg }}>
+                    <div className="absolute inset-0 flex flex-col justify-center p-4 gap-2">
+                      {tpl.defaults.showBrand && (
+                        <div className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tpl.defaults.accentColor }}>
+                          {tpl.defaults.brandName}
+                        </div>
+                      )}
+                      <div className="text-xs font-bold leading-tight" style={{ color: tpl.defaults.textColor }}>
+                        {tpl.defaults.headline}
+                      </div>
+                      <div className="text-[9px] leading-relaxed opacity-75" style={{ color: tpl.defaults.textColor }}>
+                        {tpl.defaults.subtext}
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  {/* Card footer */}
+                  <div className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-gray-900 text-sm">{tpl.name}</span>
+                      <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: tpl.platformColor }}>
+                        {tpl.platform}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">{tpl.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 1: Customise ── */}
+      {step === 1 && selected && config && (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Customise Your Post</h2>
+          <p className="text-gray-500 text-center mb-8">Adjust text, colours, and style to match your brand</p>
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* Live preview */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-2 lg:sticky lg:top-24">
+              <PostPreview template={selected} config={config} displayWidth={280} />
+              <span className="text-xs text-gray-400 font-medium">{selected.name} · {selected.platform}</span>
+            </div>
+
+            {/* Form */}
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Headline</Label>
+                <Input value={config.headline} onChange={e => patch({ headline: e.target.value })} className="text-sm" />
+              </div>
+              <div className="sm:col-span-2 space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Subtext</Label>
+                <Textarea value={config.subtext} onChange={e => patch({ subtext: e.target.value })} rows={3} className="text-sm resize-none" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Brand / Handle</Label>
+                <Input value={config.brandName} onChange={e => patch({ brandName: e.target.value })} className="text-sm" disabled={!config.showBrand} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">CTA Button Text</Label>
+                <Input value={config.cta} onChange={e => patch({ cta: e.target.value })} className="text-sm" disabled={!config.showCta} />
+              </div>
+
+              {/* Background colour */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Background</Label>
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={config.bgColor} onChange={e => patch({ bgColor: e.target.value })}
+                    className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                  {config.useGradient && (
+                    <input type="color" value={config.bgColor2} onChange={e => patch({ bgColor2: e.target.value })}
+                      className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                  )}
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <Switch checked={config.useGradient} onCheckedChange={v => patch({ useGradient: v })} />
+                    <span className="text-xs text-gray-500">Gradient</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text / accent */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Text · Accent</Label>
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={config.textColor} onChange={e => patch({ textColor: e.target.value })}
+                    title="Text colour" className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                  <input type="color" value={config.accentColor} onChange={e => patch({ accentColor: e.target.value })}
+                    title="Accent colour" className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
+                  <span className="text-xs text-gray-400 ml-1">text · accent</span>
+                </div>
+              </div>
+
+              {/* Font */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Font Style</Label>
+                <div className="flex gap-2">
+                  {(['sans', 'serif', 'mono'] as const).map(f => (
+                    <button key={f} onClick={() => patch({ font: f })}
+                      className={cn('flex-1 py-2 text-xs rounded-lg border font-medium capitalize transition-colors',
+                        config.font === f ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-300')}>
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Visibility toggles */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Show / Hide</Label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Switch checked={config.showBrand} onCheckedChange={v => patch({ showBrand: v })} />
+                    <span className="text-sm text-gray-600">Brand name</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch checked={config.showCta} onCheckedChange={v => patch({ showCta: v })} />
+                    <span className="text-sm text-gray-600">CTA button</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 2: Download & Share ── */}
+      {step === 2 && selected && config && (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Ready to Share!</h2>
+          <p className="text-gray-500 text-center mb-8">Your post is ready — download it or copy the caption text.</p>
+          <div className="flex flex-col items-center gap-8">
+            <PostPreview template={selected} config={config} displayWidth={360} />
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+              <Button onClick={handleDownload} size="lg" className="flex-1 bg-blue-900 hover:bg-blue-800 text-white gap-2">
+                <Download className="w-4 h-4" /> Download
+              </Button>
+              <Button onClick={handleCopy} variant="outline" size="lg" className="flex-1 gap-2">
+                {copied ? <CheckCheck className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copied!' : 'Copy Text'}
+              </Button>
+            </div>
+
+            {/* Caption preview */}
+            <div className="w-full max-w-sm bg-white rounded-xl border border-gray-200 p-5">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Caption Preview</p>
+              <p className="font-bold text-gray-900 mb-2">{config.headline}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">{config.subtext}</p>
+              {config.showCta && <p className="mt-3 text-blue-700 font-semibold text-sm">→ {config.cta}</p>}
+              {config.showBrand && <p className="mt-3 text-gray-400 text-xs">{config.brandName}</p>}
+            </div>
+
+            <button onClick={reset} className="text-sm text-blue-700 hover:text-blue-900 underline underline-offset-2 transition-colors">
+              ← Create another post
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className={cn('flex mt-10', step === 0 ? 'justify-end' : 'justify-between')}>
+        {step > 0 && (
+          <Button variant="outline" onClick={back} className="gap-2">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </Button>
+        )}
+        {step < 2 && (
+          <Button onClick={next} disabled={step === 0 && !selected}
+            className="bg-blue-900 hover:bg-blue-800 text-white gap-2">
+            {step === 0 ? 'Customise This Template' : 'Continue to Download'}
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Section renderers ─────────────────────────────────────────────────────────
+
+const HeroSection: React.FC<{ section: LandingSection }> = ({ section }) => {
+  const ctaStart = section.config.ctaStart ?? '/signup';
+  const ctaSignIn = section.config.ctaSignIn ?? '/login';
+  const badge = section.config.badge ?? '';
+
+  return (
+    <div className="bg-gradient-to-br from-blue-950 to-indigo-900 text-white text-center py-20 px-4">
+      <div className="max-w-3xl mx-auto">
+        {badge && (
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full text-sm text-indigo-200 mb-6">
+            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+            {badge}
+          </div>
+        )}
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-5 leading-tight">
+          {section.heading}
+        </h1>
+        {section.subheading && (
+          <p className="text-indigo-200 max-w-2xl mx-auto text-lg mb-8 leading-relaxed">
+            {section.subheading}
+          </p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link to={ctaStart}>
+            <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50 font-semibold px-8">
+              Get Started Free <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </Link>
+          <Link to={ctaSignIn}>
+            <Button size="lg" variant="ghost" className="text-white hover:bg-white/10 border border-white/30 px-8">
+              Sign In
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FeaturesSection: React.FC<{ section: LandingSection }> = ({ section }) => (
+  <div className="py-20 px-4 bg-white">
+    <div className="max-w-6xl mx-auto">
+      <div className="text-center mb-14">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">{section.heading}</h2>
+        {section.subheading && (
+          <p className="text-gray-500 max-w-2xl mx-auto text-lg">{section.subheading}</p>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {section.items.map((item, i) => (
+          <div key={i} className="p-6 rounded-2xl bg-gray-50 border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-colors">
+            <h3 className="font-bold text-gray-900 text-lg mb-2">{item.title}</h3>
+            <p className="text-gray-500 text-sm leading-relaxed">{item.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+const HowItWorksSection: React.FC<{ section: LandingSection }> = ({ section }) => (
+  <div className="py-20 px-4 bg-gray-50">
+    <div className="max-w-4xl mx-auto">
+      <div className="text-center mb-14">
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">{section.heading}</h2>
+        {section.subheading && (
+          <p className="text-gray-500 max-w-xl mx-auto text-lg">{section.subheading}</p>
+        )}
+      </div>
+      <div className="flex flex-col gap-8">
+        {section.items.map((item, i) => (
+          <div key={i} className="flex gap-6 items-start">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-sm">
+              {i + 1}
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-lg mb-1">{item.title}</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">{item.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+const CtaBannerSection: React.FC<{ section: LandingSection }> = ({ section }) => {
+  const buttonText = section.config.buttonText ?? 'Get Started';
+  const buttonUrl = section.config.buttonUrl ?? '/signup';
+
+  return (
+    <div className="py-20 px-4 bg-gradient-to-br from-blue-950 to-indigo-900 text-white text-center">
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">{section.heading}</h2>
+        {section.subheading && (
+          <p className="text-indigo-200 text-lg mb-8">{section.subheading}</p>
+        )}
+        <Link to={buttonUrl}>
+          <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50 font-semibold px-10">
+            {buttonText} <ArrowRight className="w-4 h-4 ml-1" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+// ── useSections hook ──────────────────────────────────────────────────────────
+
+function useSections(locale: string): LandingSection[] {
+  const [sections, setSections] = useState<LandingSection[]>(FALLBACK_SECTIONS);
+
+  useEffect(() => {
+    const lang = locale.split('-')[0];
+    const safeLocale = ['en', 'fi', 'sv'].includes(lang) ? lang : 'en';
+    const apiUrl = (import.meta.env.VITE_API_URL ?? '') + `/api/landing-sections?locale=${safeLocale}`;
+
+    fetch(apiUrl)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((data: LandingSection[]) => {
+        if (Array.isArray(data) && data.length > 0) setSections(data);
+      })
+      .catch(() => { /* keep fallback */ });
+  }, [locale]);
+
+  return sections;
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+const LandingPage: React.FC = () => {
+  const { i18n } = useTranslation();
+  const sections = useSections(i18n.language);
+
+  const sorted = [...sections]
+    .filter(s => s.isActive)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const renderSection = (section: LandingSection) => {
+    switch (section.type) {
+      case 'hero':
+        return <HeroSection key={section.id} section={section} />;
+      case 'wizard':
+        return (
+          <div key={section.id} className="bg-gray-50">
+            {(section.heading || section.subheading) && (
+              <div className="bg-gradient-to-br from-blue-950 to-indigo-900 text-white text-center py-14 px-4">
+                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full text-sm text-indigo-200 mb-5">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                  Social Media Post Generator
+                </div>
+                {section.heading && (
+                  <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">{section.heading}</h1>
+                )}
+                {section.subheading && (
+                  <p className="text-indigo-200 max-w-xl mx-auto text-lg">{section.subheading}</p>
+                )}
+              </div>
+            )}
+            <WizardSection section={section} />
+          </div>
+        );
+      case 'features':
+        return <FeaturesSection key={section.id} section={section} />;
+      case 'how_it_works':
+        return <HowItWorksSection key={section.id} section={section} />;
+      case 'cta_banner':
+        return <CtaBannerSection key={section.id} section={section} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navbar */}
       <nav className="fixed inset-x-0 top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
@@ -304,241 +802,7 @@ const LandingPage: React.FC = () => {
       </nav>
 
       <main className="flex-1 pt-16">
-        {/* Hero */}
-        <div className="bg-gradient-to-br from-blue-950 to-indigo-900 text-white text-center py-14 px-4">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-1.5 rounded-full text-sm text-indigo-200 mb-5">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-            Social Media Post Generator
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">Create Stunning Posts</h1>
-          <p className="text-indigo-200 max-w-xl mx-auto text-lg">Pick a template, customise it your way, then download or share in seconds.</p>
-        </div>
-
-        {/* Wizard */}
-        <div className="max-w-5xl mx-auto px-4 py-10">
-
-          {/* Step indicator */}
-          <div className="flex items-center justify-center mb-10">
-            {STEPS.map((s, idx) => (
-              <React.Fragment key={s.num}>
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className={cn(
-                    'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300',
-                    step > idx ? 'bg-green-500 text-white' :
-                    step === idx ? 'bg-blue-900 text-white ring-4 ring-blue-200' :
-                    'bg-gray-200 text-gray-500'
-                  )}>
-                    {step > idx ? <Check className="w-4 h-4" /> : s.num}
-                  </div>
-                  <span className={cn('text-xs font-medium whitespace-nowrap', step === idx ? 'text-blue-900' : 'text-gray-400')}>
-                    {s.label}
-                  </span>
-                </div>
-                {idx < STEPS.length - 1 && (
-                  <div className={cn('w-16 sm:w-24 h-0.5 mb-5 mx-1 transition-all duration-300', step > idx ? 'bg-green-500' : 'bg-gray-200')} />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-
-          {/* ── Step 0: Template Gallery ── */}
-          {step === 0 && (
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Choose a Template</h2>
-              <p className="text-gray-500 text-center mb-8">Select the style and format that fits your platform</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {templates.map(tpl => {
-                  const isSelected = selected?.id === tpl.id;
-                  const bg = tpl.defaults.useGradient
-                    ? `linear-gradient(135deg, ${tpl.defaults.bgColor}, ${tpl.defaults.bgColor2})`
-                    : tpl.defaults.bgColor;
-                  return (
-                    <button key={tpl.id} onClick={() => pick(tpl)}
-                      className={cn('text-left rounded-2xl border-2 p-1 transition-all duration-200 hover:shadow-lg focus:outline-none',
-                        isSelected ? 'border-blue-600 shadow-blue-100 shadow-lg' : 'border-transparent hover:border-gray-200')}>
-                      {/* Mini post preview */}
-                      <div className="rounded-xl overflow-hidden relative"
-                        style={{ aspectRatio: `${tpl.aspectW}/${tpl.aspectH}`, background: bg }}>
-                        <div className="absolute inset-0 flex flex-col justify-center p-4 gap-2">
-                          {tpl.defaults.showBrand && (
-                            <div className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tpl.defaults.accentColor }}>
-                              {tpl.defaults.brandName}
-                            </div>
-                          )}
-                          <div className="text-xs font-bold leading-tight" style={{ color: tpl.defaults.textColor }}>
-                            {tpl.defaults.headline}
-                          </div>
-                          <div className="text-[9px] leading-relaxed opacity-75" style={{ color: tpl.defaults.textColor }}>
-                            {tpl.defaults.subtext}
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                            <Check className="w-3.5 h-3.5 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      {/* Card footer */}
-                      <div className="p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-semibold text-gray-900 text-sm">{tpl.name}</span>
-                          <span className="text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: tpl.platformColor }}>
-                            {tpl.platform}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">{tpl.description}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── Step 1: Customise ── */}
-          {step === 1 && selected && config && (
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Customise Your Post</h2>
-              <p className="text-gray-500 text-center mb-8">Adjust text, colours, and style to match your brand</p>
-              <div className="flex flex-col lg:flex-row gap-8 items-start">
-                {/* Live preview */}
-                <div className="flex-shrink-0 flex flex-col items-center gap-2 lg:sticky lg:top-24">
-                  <PostPreview template={selected} config={config} displayWidth={280} />
-                  <span className="text-xs text-gray-400 font-medium">{selected.name} · {selected.platform}</span>
-                </div>
-
-                {/* Form */}
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Headline</Label>
-                    <Input value={config.headline} onChange={e => patch({ headline: e.target.value })} className="text-sm" />
-                  </div>
-                  <div className="sm:col-span-2 space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Subtext</Label>
-                    <Textarea value={config.subtext} onChange={e => patch({ subtext: e.target.value })} rows={3} className="text-sm resize-none" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Brand / Handle</Label>
-                    <Input value={config.brandName} onChange={e => patch({ brandName: e.target.value })} className="text-sm" disabled={!config.showBrand} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">CTA Button Text</Label>
-                    <Input value={config.cta} onChange={e => patch({ cta: e.target.value })} className="text-sm" disabled={!config.showCta} />
-                  </div>
-
-                  {/* Background colour */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Background</Label>
-                    <div className="flex gap-2 items-center">
-                      <input type="color" value={config.bgColor} onChange={e => patch({ bgColor: e.target.value })}
-                        className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
-                      {config.useGradient && (
-                        <input type="color" value={config.bgColor2} onChange={e => patch({ bgColor2: e.target.value })}
-                          className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
-                      )}
-                      <div className="flex items-center gap-1.5 ml-auto">
-                        <Switch checked={config.useGradient} onCheckedChange={v => patch({ useGradient: v })} />
-                        <span className="text-xs text-gray-500">Gradient</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Text / accent */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Text · Accent</Label>
-                    <div className="flex gap-2 items-center">
-                      <input type="color" value={config.textColor} onChange={e => patch({ textColor: e.target.value })}
-                        title="Text colour" className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
-                      <input type="color" value={config.accentColor} onChange={e => patch({ accentColor: e.target.value })}
-                        title="Accent colour" className="w-10 h-10 rounded cursor-pointer border border-gray-200 p-0.5" />
-                      <span className="text-xs text-gray-400 ml-1">text · accent</span>
-                    </div>
-                  </div>
-
-                  {/* Font */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Font Style</Label>
-                    <div className="flex gap-2">
-                      {(['sans', 'serif', 'mono'] as const).map(f => (
-                        <button key={f} onClick={() => patch({ font: f })}
-                          className={cn('flex-1 py-2 text-xs rounded-lg border font-medium capitalize transition-colors',
-                            config.font === f ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-300')}>
-                          {f}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Visibility toggles */}
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Show / Hide</Label>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <Switch checked={config.showBrand} onCheckedChange={v => patch({ showBrand: v })} />
-                        <span className="text-sm text-gray-600">Brand name</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Switch checked={config.showCta} onCheckedChange={v => patch({ showCta: v })} />
-                        <span className="text-sm text-gray-600">CTA button</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Step 2: Download & Share ── */}
-          {step === 2 && selected && config && (
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Ready to Share!</h2>
-              <p className="text-gray-500 text-center mb-8">Your post is ready — download it or copy the caption text.</p>
-              <div className="flex flex-col items-center gap-8">
-                <PostPreview template={selected} config={config} displayWidth={360} />
-
-                <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-                  <Button onClick={handleDownload} size="lg" className="flex-1 bg-blue-900 hover:bg-blue-800 text-white gap-2">
-                    <Download className="w-4 h-4" /> Download
-                  </Button>
-                  <Button onClick={handleCopy} variant="outline" size="lg" className="flex-1 gap-2">
-                    {copied ? <CheckCheck className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied!' : 'Copy Text'}
-                  </Button>
-                </div>
-
-                {/* Caption preview */}
-                <div className="w-full max-w-sm bg-white rounded-xl border border-gray-200 p-5">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Caption Preview</p>
-                  <p className="font-bold text-gray-900 mb-2">{config.headline}</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{config.subtext}</p>
-                  {config.showCta && <p className="mt-3 text-blue-700 font-semibold text-sm">→ {config.cta}</p>}
-                  {config.showBrand && <p className="mt-3 text-gray-400 text-xs">{config.brandName}</p>}
-                </div>
-
-                <button onClick={reset} className="text-sm text-blue-700 hover:text-blue-900 underline underline-offset-2 transition-colors">
-                  ← Create another post
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className={cn('flex mt-10', step === 0 ? 'justify-end' : 'justify-between')}>
-            {step > 0 && (
-              <Button variant="outline" onClick={back} className="gap-2">
-                <ArrowLeft className="w-4 h-4" /> Back
-              </Button>
-            )}
-            {step < 2 && (
-              <Button onClick={next} disabled={step === 0 && !selected}
-                className="bg-blue-900 hover:bg-blue-800 text-white gap-2">
-                {step === 0 ? 'Customise This Template' : 'Continue to Download'}
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
+        {sorted.map(renderSection)}
       </main>
 
       {/* Footer */}

@@ -41,6 +41,8 @@ data:
       --data 'paths[]=/api/auth/sso-exchange' \
       --data 'paths[]=/api/oauth/introspect' \
       --data 'paths[]=/api/health' \
+      --data 'paths[]=/api/landing-templates' \
+      --data 'paths[]=/api/landing-sections' \
       --data 'strip_path=false'
 
     # Passport OAuth2 authorization flow — browser-facing, no JWT required.

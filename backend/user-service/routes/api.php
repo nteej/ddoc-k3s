@@ -3,6 +3,7 @@
 use App\Infrastructure\Http\Controllers\ApiKeyController;
 use App\Infrastructure\Http\Controllers\AuthController;
 use App\Infrastructure\Http\Controllers\HealthController;
+use App\Infrastructure\Http\Controllers\LandingSectionController;
 use App\Infrastructure\Http\Controllers\LandingTemplateController;
 use App\Infrastructure\Http\Controllers\KlarnaController;
 use App\Infrastructure\Http\Controllers\KlarnaSettingsController;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health/system', [HealthController::class, 'system']);
 Route::get('/landing-templates', [LandingTemplateController::class, 'index']);
+Route::get('/landing-sections', [LandingSectionController::class, 'index']);
 
 Route::prefix('auth')->controller(AuthController::class)->group(function () {
     Route::post('/login', 'login');

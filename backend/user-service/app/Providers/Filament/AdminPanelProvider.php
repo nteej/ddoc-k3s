@@ -10,6 +10,7 @@ use App\Filament\Resources\NotificationResource;
 use App\Filament\Resources\OrganizationResource;
 use App\Filament\Resources\PackageResource;
 use App\Filament\Resources\PackageUpgradeRequestResource;
+use App\Filament\Resources\LandingSectionResource;
 use App\Filament\Resources\LandingTemplateResource;
 use App\Filament\Resources\TemplateResource;
 use App\Filament\Resources\UserResource;
@@ -56,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 TemplateResource::class,
                 FileResource::class,
                 LandingTemplateResource::class,
+                LandingSectionResource::class,
             ])
             ->pages([
                 KlarnaSettings::class,

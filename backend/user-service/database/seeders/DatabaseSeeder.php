@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->seedAdminUser();
         $this->call(PassportClientSeeder::class);
+        $this->call(LandingTemplateSeeder::class);
+        $this->call(LandingSectionSeeder::class);
     }
 
     private function seedAdminUser(): void
