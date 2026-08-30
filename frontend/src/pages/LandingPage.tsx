@@ -62,38 +62,27 @@ interface LandingSection {
   config: Record<string, string>;
 }
 
-// ── Fallback sections (mirrors seeder data) ───────────────────────────────────
+// ── Fallback sections ─────────────────────────────────────────────────────────
 
 const FALLBACK_SECTIONS: LandingSection[] = [
   {
-    id: 'hero',
-    type: 'hero',
-    sortOrder: 0,
-    isActive: true,
+    id: 'hero', type: 'hero', sortOrder: 0, isActive: true,
     heading: 'Generate Documents at Scale',
     subheading: 'Create reusable templates with dynamic fields. Preview documents live as you type, then generate professional PDFs — instantly, in bulk, or via API.',
     items: [],
     config: {
-      ctaStart: '/signup',
-      ctaSignIn: '/login',
+      ctaStart: '/signup', ctaSignIn: '/login',
       badge: 'v2.0.0 is live · Enterprise SSO · Live preview · API keys',
     },
   },
   {
-    id: 'wizard',
-    type: 'wizard',
-    sortOrder: 1,
-    isActive: true,
+    id: 'wizard', type: 'wizard', sortOrder: 1, isActive: true,
     heading: 'Create Your Social Media Post',
     subheading: 'Pick a template, customise it, and download.',
-    items: [],
-    config: {},
+    items: [], config: {},
   },
   {
-    id: 'features',
-    type: 'features',
-    sortOrder: 2,
-    isActive: true,
+    id: 'features', type: 'features', sortOrder: 2, isActive: true,
     heading: 'Everything you need',
     subheading: 'A complete platform for document automation — from template creation to live preview, bulk generation, and email delivery.',
     items: [
@@ -110,10 +99,7 @@ const FALLBACK_SECTIONS: LandingSection[] = [
     config: {},
   },
   {
-    id: 'how_it_works',
-    type: 'how_it_works',
-    sortOrder: 3,
-    isActive: true,
+    id: 'how_it_works', type: 'how_it_works', sortOrder: 3, isActive: true,
     heading: 'How it works',
     subheading: 'From template to finished document in three simple steps.',
     items: [
@@ -124,31 +110,21 @@ const FALLBACK_SECTIONS: LandingSection[] = [
     config: {},
   },
   {
-    id: 'cta_banner',
-    type: 'cta_banner',
-    sortOrder: 4,
-    isActive: true,
+    id: 'cta_banner', type: 'cta_banner', sortOrder: 4, isActive: true,
     heading: 'Ready to automate your documents?',
     subheading: 'Create your account and start generating professional PDFs today.',
     items: [],
-    config: {
-      buttonText: 'Create Free Account',
-      buttonUrl: '/signup',
-    },
+    config: { buttonText: 'Create Free Account', buttonUrl: '/signup' },
   },
 ];
 
-// ── Templates (for the wizard) ────────────────────────────────────────────────
+// ── Fallback templates ────────────────────────────────────────────────────────
 
 const FALLBACK_TEMPLATES: Template[] = [
   {
-    id: 'bold-gradient',
-    name: 'Bold Gradient',
-    platform: 'Instagram',
-    platformColor: '#ec4899',
+    id: 'bold-gradient', name: 'Bold Gradient', platform: 'Instagram', platformColor: '#ec4899',
     description: '1:1 square with vibrant gradient background',
-    aspectW: 1, aspectH: 1, exportWidth: 1080, exportHeight: 1080,
-    shareUrlTemplate: null,
+    aspectW: 1, aspectH: 1, exportWidth: 1080, exportHeight: 1080, shareUrlTemplate: null,
     layout: 'centered',
     defaults: {
       headline: 'Make an Impact Today', subtext: 'Share your story with the world and inspire others', cta: 'Learn More',
@@ -157,13 +133,9 @@ const FALLBACK_TEMPLATES: Template[] = [
     },
   },
   {
-    id: 'minimal-clean',
-    name: 'Minimal Clean',
-    platform: 'Instagram',
-    platformColor: '#ec4899',
+    id: 'minimal-clean', name: 'Minimal Clean', platform: 'Instagram', platformColor: '#ec4899',
     description: '1:1 square with light, elegant white design',
-    aspectW: 1, aspectH: 1, exportWidth: 1080, exportHeight: 1080,
-    shareUrlTemplate: null,
+    aspectW: 1, aspectH: 1, exportWidth: 1080, exportHeight: 1080, shareUrlTemplate: null,
     layout: 'centered',
     defaults: {
       headline: 'Less Is More', subtext: 'Powerful ideas expressed simply and clearly to your audience', cta: 'Read More',
@@ -172,10 +144,7 @@ const FALLBACK_TEMPLATES: Template[] = [
     },
   },
   {
-    id: 'tweet-card',
-    name: 'Tweet Card',
-    platform: 'Twitter / X',
-    platformColor: '#0ea5e9',
+    id: 'tweet-card', name: 'Tweet Card', platform: 'Twitter / X', platformColor: '#0ea5e9',
     description: '16:9 wide card optimised for X / Twitter',
     aspectW: 16, aspectH: 9, exportWidth: 1200, exportHeight: 675,
     shareUrlTemplate: 'https://twitter.com/intent/tweet?text={text}',
@@ -187,10 +156,7 @@ const FALLBACK_TEMPLATES: Template[] = [
     },
   },
   {
-    id: 'linkedin-pro',
-    name: 'Professional',
-    platform: 'LinkedIn',
-    platformColor: '#2563eb',
+    id: 'linkedin-pro', name: 'Professional', platform: 'LinkedIn', platformColor: '#2563eb',
     description: '1.91:1 banner for LinkedIn posts',
     aspectW: 1.91, aspectH: 1, exportWidth: 1200, exportHeight: 628,
     shareUrlTemplate: 'https://www.linkedin.com/sharing/share-offsite/?url={url}',
@@ -202,13 +168,9 @@ const FALLBACK_TEMPLATES: Template[] = [
     },
   },
   {
-    id: 'story-vibrant',
-    name: 'Vibrant Story',
-    platform: 'Instagram Story',
-    platformColor: '#f97316',
+    id: 'story-vibrant', name: 'Vibrant Story', platform: 'Instagram Story', platformColor: '#f97316',
     description: '9:16 vertical story with bold colours',
-    aspectW: 9, aspectH: 16, exportWidth: 1080, exportHeight: 1920,
-    shareUrlTemplate: null,
+    aspectW: 9, aspectH: 16, exportWidth: 1080, exportHeight: 1920, shareUrlTemplate: null,
     layout: 'centered',
     defaults: {
       headline: 'Swipe Up!', subtext: "Exclusive content just for you. Don't miss today's limited offer.", cta: 'Tap Here',
@@ -217,13 +179,9 @@ const FALLBACK_TEMPLATES: Template[] = [
     },
   },
   {
-    id: 'quote-card',
-    name: 'Quote Card',
-    platform: 'All Platforms',
-    platformColor: '#475569',
+    id: 'quote-card', name: 'Quote Card', platform: 'All Platforms', platformColor: '#475569',
     description: '1:1 dark inspirational quote design',
-    aspectW: 1, aspectH: 1, exportWidth: 1080, exportHeight: 1080,
-    shareUrlTemplate: null,
+    aspectW: 1, aspectH: 1, exportWidth: 1080, exportHeight: 1080, shareUrlTemplate: null,
     layout: 'quote',
     defaults: {
       headline: 'The best time to start was yesterday. The next best time is now.', subtext: 'Share wisdom that moves people',
@@ -233,7 +191,7 @@ const FALLBACK_TEMPLATES: Template[] = [
   },
 ];
 
-// ── Canvas download ───────────────────────────────────────────────────────────
+// ── Canvas helpers ────────────────────────────────────────────────────────────
 
 function drawWrappedText(
   ctx: CanvasRenderingContext2D,
@@ -260,126 +218,183 @@ function drawWrappedText(
   return cy;
 }
 
-function hexToRgb(hex: string): [number, number, number] {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return [r, g, b];
-}
+function createPostBlob(template: Template, config: PostConfig): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const W = template.exportWidth ?? 1080;
+    const H = template.exportHeight ?? 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { reject(new Error('canvas unsupported')); return; }
 
-function downloadPostAsImage(template: Template, config: PostConfig) {
-  const W = template.exportWidth;
-  const H = template.exportHeight;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-
-  // Background
-  if (config.useGradient) {
-    const grad = ctx.createLinearGradient(0, 0, W, H);
-    grad.addColorStop(0, config.bgColor);
-    grad.addColorStop(1, config.bgColor2);
-    ctx.fillStyle = grad;
-  } else {
-    ctx.fillStyle = config.bgColor;
-  }
-  ctx.fillRect(0, 0, W, H);
-
-  const pad = W * 0.1;
-  const fontFamily = config.font === 'serif' ? 'Georgia, serif'
-    : config.font === 'mono' ? 'monospace'
-    : 'system-ui, sans-serif';
-
-  if (template.layout === 'quote') {
-    // Accent bar
-    ctx.fillStyle = config.accentColor;
-    ctx.fillRect(0, 0, W * 0.012, H);
-    // Quote mark
-    ctx.font = `bold ${W * 0.15}px ${fontFamily}`;
-    ctx.fillStyle = config.accentColor;
-    ctx.fillText('"', pad, H * 0.22);
-    // Headline (italic)
-    ctx.font = `italic ${W * 0.055}px ${fontFamily}`;
-    ctx.fillStyle = config.textColor;
-    let cy = drawWrappedText(ctx, config.headline, pad, H * 0.35, W - pad * 2, W * 0.07);
-    // Brand
-    if (config.showBrand) {
-      ctx.font = `bold ${W * 0.035}px ${fontFamily}`;
-      ctx.fillStyle = config.accentColor;
-      ctx.fillText(config.brandName, pad, cy + W * 0.03);
-    }
-  } else if (template.layout === 'bottom') {
-    // Decorative overlay
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    ctx.fillRect(W * 0.45, 0, W, H);
-    // Bottom-aligned text
-    const startY = H * 0.6;
-    let cy = startY;
-    if (config.showBrand) {
-      ctx.font = `bold ${W * 0.025}px ${fontFamily}`;
-      ctx.fillStyle = config.accentColor;
-      ctx.fillText(config.brandName.toUpperCase(), pad, cy); cy += W * 0.04;
-    }
-    ctx.font = `bold ${W * 0.07}px ${fontFamily}`;
-    ctx.fillStyle = config.textColor;
-    cy = drawWrappedText(ctx, config.headline, pad, cy, W * 0.75, W * 0.085);
-    ctx.font = `${W * 0.035}px ${fontFamily}`;
-    ctx.globalAlpha = 0.75;
-    cy = drawWrappedText(ctx, config.subtext, pad, cy + W * 0.01, W * 0.7, W * 0.045);
-    ctx.globalAlpha = 1;
-    if (config.showCta) {
-      const ctaPad = W * 0.04;
-      ctx.fillStyle = config.accentColor;
-      ctx.roundRect(pad, cy + W * 0.02, ctx.measureText(config.cta).width + ctaPad * 2, W * 0.06, W * 0.01);
-      ctx.fill();
-      ctx.font = `bold ${W * 0.028}px ${fontFamily}`;
+    if (config.useGradient) {
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, config.bgColor);
+      grad.addColorStop(1, config.bgColor2);
+      ctx.fillStyle = grad;
+    } else {
       ctx.fillStyle = config.bgColor;
-      ctx.fillText(config.cta, pad + ctaPad, cy + W * 0.02 + W * 0.042);
     }
-  } else {
-    // Centered
-    ctx.fillStyle = 'rgba(255,255,255,0.07)';
-    ctx.beginPath();
-    ctx.arc(W * 1.1, -H * 0.1, W * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-    let cy = H * 0.25;
-    if (config.showBrand) {
-      ctx.font = `bold ${W * 0.025}px ${fontFamily}`;
+    ctx.fillRect(0, 0, W, H);
+
+    const pad = W * 0.1;
+    const fontFamily = config.font === 'serif' ? 'Georgia, serif'
+      : config.font === 'mono' ? 'monospace'
+      : 'system-ui, sans-serif';
+
+    if (template.layout === 'quote') {
       ctx.fillStyle = config.accentColor;
-      ctx.fillText(config.brandName.toUpperCase(), pad, cy); cy += W * 0.05;
-    }
-    ctx.font = `bold ${W * 0.075}px ${fontFamily}`;
-    ctx.fillStyle = config.textColor;
-    cy = drawWrappedText(ctx, config.headline, pad, cy, W - pad * 2, W * 0.09);
-    ctx.font = `${W * 0.035}px ${fontFamily}`;
-    ctx.globalAlpha = 0.8;
-    cy = drawWrappedText(ctx, config.subtext, pad, cy + W * 0.01, W - pad * 2, W * 0.05);
-    ctx.globalAlpha = 1;
-    if (config.showCta) {
-      const ctaPad = W * 0.05;
-      const ctaW = ctx.measureText(config.cta).width + ctaPad * 2;
-      const ctaH = W * 0.065;
+      ctx.fillRect(0, 0, W * 0.012, H);
+      ctx.font = `bold ${W * 0.15}px ${fontFamily}`;
       ctx.fillStyle = config.accentColor;
+      ctx.fillText('"', pad, H * 0.22);
+      ctx.font = `italic ${W * 0.055}px ${fontFamily}`;
+      ctx.fillStyle = config.textColor;
+      let cy = drawWrappedText(ctx, config.headline, pad, H * 0.35, W - pad * 2, W * 0.07);
+      if (config.showBrand) {
+        ctx.font = `bold ${W * 0.035}px ${fontFamily}`;
+        ctx.fillStyle = config.accentColor;
+        ctx.fillText(config.brandName, pad, cy + W * 0.03);
+      }
+    } else if (template.layout === 'bottom') {
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(W * 0.45, 0, W, H);
+      const startY = H * 0.6;
+      let cy = startY;
+      if (config.showBrand) {
+        ctx.font = `bold ${W * 0.025}px ${fontFamily}`;
+        ctx.fillStyle = config.accentColor;
+        ctx.fillText(config.brandName.toUpperCase(), pad, cy); cy += W * 0.04;
+      }
+      ctx.font = `bold ${W * 0.07}px ${fontFamily}`;
+      ctx.fillStyle = config.textColor;
+      cy = drawWrappedText(ctx, config.headline, pad, cy, W * 0.75, W * 0.085);
+      ctx.font = `${W * 0.035}px ${fontFamily}`;
+      ctx.globalAlpha = 0.75;
+      cy = drawWrappedText(ctx, config.subtext, pad, cy + W * 0.01, W * 0.7, W * 0.045);
+      ctx.globalAlpha = 1;
+      if (config.showCta) {
+        const ctaPad = W * 0.04;
+        ctx.fillStyle = config.accentColor;
+        ctx.roundRect(pad, cy + W * 0.02, ctx.measureText(config.cta).width + ctaPad * 2, W * 0.06, W * 0.01);
+        ctx.fill();
+        ctx.font = `bold ${W * 0.028}px ${fontFamily}`;
+        ctx.fillStyle = config.bgColor;
+        ctx.fillText(config.cta, pad + ctaPad, cy + W * 0.02 + W * 0.042);
+      }
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
       ctx.beginPath();
-      ctx.roundRect(pad, cy + W * 0.02, ctaW, ctaH, ctaH / 2);
+      ctx.arc(W * 1.1, -H * 0.1, W * 0.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.font = `bold ${W * 0.03}px ${fontFamily}`;
-      ctx.fillStyle = config.bgColor;
-      ctx.fillText(config.cta, pad + ctaPad, cy + W * 0.02 + ctaH * 0.65);
+      let cy = H * 0.25;
+      if (config.showBrand) {
+        ctx.font = `bold ${W * 0.025}px ${fontFamily}`;
+        ctx.fillStyle = config.accentColor;
+        ctx.fillText(config.brandName.toUpperCase(), pad, cy); cy += W * 0.05;
+      }
+      ctx.font = `bold ${W * 0.075}px ${fontFamily}`;
+      ctx.fillStyle = config.textColor;
+      cy = drawWrappedText(ctx, config.headline, pad, cy, W - pad * 2, W * 0.09);
+      ctx.font = `${W * 0.035}px ${fontFamily}`;
+      ctx.globalAlpha = 0.8;
+      cy = drawWrappedText(ctx, config.subtext, pad, cy + W * 0.01, W - pad * 2, W * 0.05);
+      ctx.globalAlpha = 1;
+      if (config.showCta) {
+        const ctaPad = W * 0.05;
+        const ctaW = ctx.measureText(config.cta).width + ctaPad * 2;
+        const ctaH = W * 0.065;
+        ctx.fillStyle = config.accentColor;
+        ctx.beginPath();
+        ctx.roundRect(pad, cy + W * 0.02, ctaW, ctaH, ctaH / 2);
+        ctx.fill();
+        ctx.font = `bold ${W * 0.03}px ${fontFamily}`;
+        ctx.fillStyle = config.bgColor;
+        ctx.fillText(config.cta, pad + ctaPad, cy + W * 0.02 + ctaH * 0.65);
+      }
     }
-  }
 
-  canvas.toBlob(blob => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${template.name.replace(/\s+/g, '-').toLowerCase()}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, 'image/png');
+    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/png');
+  });
 }
+
+async function downloadPostAsImage(template: Template, config: PostConfig): Promise<void> {
+  const blob = await createPostBlob(template, config);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${template.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+  a.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── Mockup frame components ───────────────────────────────────────────────────
+
+const PhoneFrame: React.FC<{ children: React.ReactNode; width?: number; dark?: boolean }> = ({
+  children, width = 300, dark = false,
+}) => (
+  <div style={{
+    width, flexShrink: 0,
+    background: dark ? '#0a0a0a' : '#fff',
+    borderRadius: 40,
+    border: `7px solid ${dark ? '#222' : '#c8cbd0'}`,
+    boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+    overflow: 'hidden',
+  }}>
+    {/* Status bar */}
+    <div style={{
+      height: 30, background: dark ? '#0a0a0a' : '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 18px', fontSize: 9, fontWeight: 700,
+      color: dark ? '#fff' : '#000',
+    }}>
+      <span>9:41</span>
+      <div style={{ width: 64, height: 16, background: dark ? '#111' : '#e5e7eb', borderRadius: 8 }} />
+      <span style={{ letterSpacing: -0.5 }}>●●● 100%</span>
+    </div>
+    {/* Content */}
+    <div style={{ maxHeight: 540, overflowY: 'auto', overflowX: 'hidden' }}>{children}</div>
+    {/* Home indicator */}
+    <div style={{ height: 28, background: dark ? '#0a0a0a' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 90, height: 4, background: dark ? '#333' : '#d1d5db', borderRadius: 4 }} />
+    </div>
+  </div>
+);
+
+const BrowserFrame: React.FC<{ url: string; children: React.ReactNode; width?: number }> = ({
+  url, children, width = 520,
+}) => (
+  <div style={{
+    width, background: '#f8f9fa', borderRadius: 12, overflow: 'hidden',
+    boxShadow: '0 12px 48px rgba(0,0,0,0.22)', border: '1px solid #dadce0',
+  }}>
+    {/* Chrome toolbar */}
+    <div style={{
+      background: '#ffffff', padding: '8px 12px',
+      display: 'flex', alignItems: 'center', gap: 8,
+      borderBottom: '1px solid #e8eaed',
+    }}>
+      <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+        {['#ff5f57', '#ffbd2e', '#28c840'].map(c => (
+          <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
+        ))}
+      </div>
+      <div style={{
+        flex: 1, background: '#f1f3f4', borderRadius: 20,
+        padding: '4px 10px', fontSize: 10, color: '#5f6368',
+        display: 'flex', alignItems: 'center', gap: 5, minWidth: 0,
+      }}>
+        <span>🔒</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{url}</span>
+      </div>
+    </div>
+    <div style={{ maxHeight: 480, overflowY: 'auto', overflowX: 'hidden' }}>{children}</div>
+  </div>
+);
 
 // ── Social Mockup ─────────────────────────────────────────────────────────────
 
@@ -392,119 +407,396 @@ interface SocialMockupProps {
 }
 
 const SocialMockup: React.FC<SocialMockupProps> = ({ template, config, view }) => {
-  const platform = template.platform.toLowerCase();
-  const isInstagram = platform.includes('instagram');
-  const isTwitter = platform.includes('twitter') || platform.includes('x');
-  const isLinkedIn = platform.includes('linkedin');
-
-  const postW = view === 'mobile' ? 260 : 420;
-  const postH = Math.round(postW * template.aspectH / template.aspectW);
+  const plat = template.platform.toLowerCase();
+  const isInstagram = plat.includes('instagram') && !plat.includes('story');
+  const isStory = plat.includes('story');
+  const isTwitter = plat.includes('twitter') || plat === 'x';
+  const isLinkedIn = plat.includes('linkedin');
 
   const bg = config.useGradient
     ? `linear-gradient(135deg, ${config.bgColor}, ${config.bgColor2})`
     : config.bgColor;
 
-  const PostImg = (
-    <div style={{ width: postW, height: postH, background: bg, borderRadius: 8, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-      <PostPreview template={template} config={config} displayWidth={postW} />
-    </div>
-  );
+  const handle = (config.brandName || 'yourbrand').toLowerCase().replace(/\s+/g, '');
 
+  // ── Instagram Story ──────────────────────────────────────────────────────────
+  if (isStory) {
+    const storyW = view === 'mobile' ? 220 : 260;
+    return (
+      <PhoneFrame width={storyW + 28} dark>
+        <div style={{ position: 'relative' }}>
+          {/* Story image full-bleed */}
+          <div style={{ width: '100%', aspectRatio: '9/16', background: bg, position: 'relative', overflow: 'hidden' }}>
+            <PostPreview template={template} config={config} displayWidth={storyW + 14} />
+            {/* Top overlay: progress + avatar */}
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, padding: '8px 10px',
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)',
+            }}>
+              <div style={{ display: 'flex', gap: 3, marginBottom: 8 }}>
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{ flex: 1, height: 2, background: i === 1 ? '#fff' : 'rgba(255,255,255,0.35)', borderRadius: 2 }} />
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', border: '2px solid #fff', background: `linear-gradient(45deg,${config.bgColor2},${config.accentColor})`, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>{config.brandName || 'brand'}</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)' }}>3h</span>
+                <span style={{ marginLeft: 'auto', fontSize: 15, color: '#fff' }}>✕</span>
+              </div>
+            </div>
+            {/* Bottom reply bar */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.5), transparent)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <div style={{ flex: 1, border: '1px solid rgba(255,255,255,0.5)', borderRadius: 999, padding: '5px 10px', fontSize: 10, color: 'rgba(255,255,255,0.75)' }}>
+                Reply to {config.brandName || 'brand'}…
+              </div>
+              <span style={{ fontSize: 18 }}>❤</span>
+              <span style={{ fontSize: 18 }}>↗</span>
+            </div>
+          </div>
+        </div>
+        {/* Bottom nav */}
+        <div style={{ background: '#000', display: 'flex', justifyContent: 'space-around', padding: '8px 0', fontSize: 18 }}>
+          {['🏠', '🔍', '🎬', '🛒', '👤'].map(i => <span key={i}>{i}</span>)}
+        </div>
+      </PhoneFrame>
+    );
+  }
+
+  // ── Instagram Post ───────────────────────────────────────────────────────────
   if (isInstagram) {
-    const phoneW = view === 'mobile' ? 300 : 380;
+    if (view === 'mobile') {
+      const phoneW = 300;
+      return (
+        <PhoneFrame width={phoneW}>
+          {/* App bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', borderBottom: '1px solid #efefef' }}>
+            <div style={{ fontSize: 18, fontWeight: 900, fontStyle: 'italic', fontFamily: 'serif', letterSpacing: -0.5 }}>Instagram</div>
+            <div style={{ display: 'flex', gap: 14, fontSize: 18 }}>
+              <span>➕</span><span>❤</span><span>✈</span>
+            </div>
+          </div>
+          {/* Stories row */}
+          <div style={{ display: 'flex', gap: 10, padding: '10px 14px', borderBottom: '1px solid #efefef', overflowX: 'hidden' }}>
+            {['Your story', handle, 'friend1', 'friend2'].map((n, i) => (
+              <div key={n} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+                <div style={{ width: 46, height: 46, borderRadius: '50%', padding: 2, background: i === 0 ? '#e5e7eb' : 'linear-gradient(45deg,#f09433,#dc2743,#bc1888)' }}>
+                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: i === 0 ? '#f9fafb' : `hsl(${i * 80},55%,60%)`, border: '2px solid white' }} />
+                </div>
+                <span style={{ fontSize: 9, color: '#262626', maxWidth: 48, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n}</span>
+              </div>
+            ))}
+          </div>
+          {/* Post */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px' }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', background: `linear-gradient(45deg,${config.bgColor2},${config.accentColor})`, border: '2px solid #e5e7eb', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#262626' }}>{handle}</div>
+                <div style={{ fontSize: 9, color: '#8e8e8e' }}>Sponsored · <span style={{ color: '#0095f6' }}>Follow</span></div>
+              </div>
+              <span style={{ fontSize: 16, color: '#262626' }}>···</span>
+            </div>
+            <div style={{ width: '100%', aspectRatio: `${template.aspectW}/${template.aspectH}`, overflow: 'hidden', position: 'relative' }}>
+              <PostPreview template={template} config={config} displayWidth={phoneW - 14} />
+            </div>
+            <div style={{ padding: '8px 12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                <span style={{ fontSize: 20 }}>♡</span>
+                <span style={{ fontSize: 20 }}>💬</span>
+                <span style={{ fontSize: 20 }}>↗</span>
+                <span style={{ fontSize: 20, marginLeft: 'auto' }}>🔖</span>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#262626', marginBottom: 3 }}>1,234 likes</div>
+              <div style={{ fontSize: 11, color: '#262626' }}>
+                <strong>{handle}</strong> <span style={{ color: '#8e8e8e' }}>{config.headline}</span>
+              </div>
+              <div style={{ fontSize: 10, color: '#8e8e8e', marginTop: 2 }}>View all 56 comments</div>
+            </div>
+          </div>
+          {/* Bottom nav */}
+          <div style={{ display: 'flex', justifyContent: 'space-around', padding: '8px 0', borderTop: '1px solid #efefef', fontSize: 20 }}>
+            {['🏠', '🔍', '➕', '🎬', '👤'].map(i => <span key={i}>{i}</span>)}
+          </div>
+        </PhoneFrame>
+      );
+    }
+    // Desktop Instagram
     return (
-      <div style={{ width: phoneW, background: '#fff', borderRadius: 40, border: '8px solid #1a1a1a', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', overflow: 'hidden', position: 'relative' }}>
-        {/* Notch */}
-        <div style={{ height: 28, background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 80, height: 10, background: '#2a2a2a', borderRadius: 10 }} />
-        </div>
-        {/* IG Header */}
-        <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #efefef' }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)' }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#1a1a1a' }}>{config.brandName || 'yourbrand'}</div>
-            <div style={{ fontSize: 9, color: '#8e8e8e' }}>Sponsored</div>
+      <BrowserFrame url={`instagram.com/p/abc123`}>
+        {/* Top nav */}
+        <div style={{ background: '#fff', borderBottom: '1px solid #dbdbdb', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 18, fontWeight: 900, fontStyle: 'italic', fontFamily: 'serif' }}>Instagram</div>
+          <div style={{ background: '#f3f4f6', borderRadius: 8, padding: '5px 12px', fontSize: 11, color: '#8e8e8e', display: 'flex', alignItems: 'center', gap: 5 }}>🔍 Search</div>
+          <div style={{ display: 'flex', gap: 14, fontSize: 18 }}>
+            <span>🏠</span><span>🎬</span><span>➕</span><span>❤</span><span>👤</span>
           </div>
-          <div style={{ fontSize: 16, color: '#8e8e8e' }}>···</div>
         </div>
-        {/* Post image */}
-        <div style={{ width: '100%', aspectRatio: `${template.aspectW}/${template.aspectH}`, background: bg, position: 'relative', overflow: 'hidden' }}>
-          <PostPreview template={template} config={config} displayWidth={phoneW - 16} />
-        </div>
-        {/* Actions */}
-        <div style={{ padding: '8px 12px' }}>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 6 }}>
-            {['♡', '💬', '↗'].map(i => <span key={i} style={{ fontSize: 18 }}>{i}</span>)}
+        {/* Two-column feed */}
+        <div style={{ display: 'flex', gap: 20, padding: '16px', justifyContent: 'center', background: '#fafafa' }}>
+          {/* Main post */}
+          <div style={{ width: 340, flexShrink: 0 }}>
+            <div style={{ background: '#fff', border: '1px solid #dbdbdb', borderRadius: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(45deg,${config.bgColor2},${config.accentColor})`, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700 }}>{handle}</div>
+                  <div style={{ fontSize: 9, color: '#8e8e8e' }}>Sponsored</div>
+                </div>
+                <span style={{ marginLeft: 'auto', fontSize: 14, color: '#262626' }}>···</span>
+              </div>
+              <div style={{ width: '100%', aspectRatio: `${template.aspectW}/${template.aspectH}`, overflow: 'hidden' }}>
+                <PostPreview template={template} config={config} displayWidth={340} />
+              </div>
+              <div style={{ padding: '10px 12px' }}>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 6, fontSize: 16 }}>
+                  <span>♡</span><span>💬</span><span>↗</span><span style={{ marginLeft: 'auto' }}>🔖</span>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700 }}>1,234 likes</div>
+                <div style={{ fontSize: 11, color: '#262626', marginTop: 2 }}>
+                  <strong>{handle}</strong> {config.headline}
+                </div>
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#1a1a1a', marginBottom: 2 }}>1,234 likes</div>
-          <div style={{ fontSize: 10, color: '#1a1a1a' }}>
-            <strong>{config.brandName || 'yourbrand'}</strong> {config.headline}
+          {/* Right sidebar */}
+          <div style={{ width: 130, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(45deg,${config.bgColor2},${config.accentColor})` }} />
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700 }}>{handle}</div>
+                <div style={{ fontSize: 9, color: '#8e8e8e' }}>{config.brandName || 'Your Brand'}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#8e8e8e', marginBottom: 8 }}>Suggested for you</div>
+            {['user_one', 'cool_brand', 'creator99'].map(u => (
+              <div key={u} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e5e7eb', flexShrink: 0 }} />
+                <div style={{ flex: 1, fontSize: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u}</div>
+                <div style={{ fontSize: 9, color: '#0095f6', fontWeight: 700, flexShrink: 0 }}>Follow</div>
+              </div>
+            ))}
           </div>
-          <div style={{ fontSize: 9, color: '#8e8e8e', marginTop: 2 }}>View all 56 comments</div>
         </div>
-        {/* Home bar */}
-        <div style={{ height: 20, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 80, height: 4, background: '#1a1a1a', borderRadius: 4 }} />
-        </div>
-      </div>
+      </BrowserFrame>
     );
   }
 
+  // ── Twitter / X ──────────────────────────────────────────────────────────────
   if (isTwitter) {
-    const cardW = view === 'mobile' ? 300 : 480;
+    if (view === 'mobile') {
+      const phoneW = 300;
+      return (
+        <PhoneFrame width={phoneW} dark>
+          {/* App header */}
+          <div style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderBottom: '1px solid #2f3336' }}>
+            <div style={{ fontSize: 20, color: '#fff', fontWeight: 900 }}>𝕏</div>
+          </div>
+          {/* Tweet */}
+          <div style={{ background: '#000', padding: '12px 14px', borderBottom: '1px solid #2f3336' }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1d9bf0', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, fontWeight: 700 }}>𝕏</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'baseline', flexWrap: 'wrap', marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#e7e9ea' }}>{config.brandName || 'Your Brand'}</span>
+                  <span style={{ fontSize: 11, color: '#71767b' }}>@{handle} · 3h</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#e7e9ea', lineHeight: 1.5, marginBottom: 8 }}>{config.headline}</div>
+                <div style={{ width: '100%', aspectRatio: `${template.aspectW}/${template.aspectH}`, borderRadius: 12, overflow: 'hidden' }}>
+                  <PostPreview template={template} config={config} displayWidth={phoneW - 74} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, color: '#71767b', fontSize: 11 }}>
+                  <span>💬 12</span><span>🔁 48</span><span>♡ 284</span><span>📊</span><span>📤</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Placeholder tweet */}
+          <div style={{ background: '#000', padding: '12px 14px', borderBottom: '1px solid #2f3336', display: 'flex', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#2f3336', flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ width: '55%', height: 8, background: '#2f3336', borderRadius: 4, marginBottom: 6 }} />
+              <div style={{ width: '85%', height: 6, background: '#2f3336', borderRadius: 4, marginBottom: 4 }} />
+              <div style={{ width: '65%', height: 6, background: '#2f3336', borderRadius: 4 }} />
+            </div>
+          </div>
+          {/* Bottom nav */}
+          <div style={{ background: '#000', borderTop: '1px solid #2f3336', display: 'flex', justifyContent: 'space-around', padding: '10px 0', fontSize: 18, color: '#e7e9ea' }}>
+            {['🏠', '🔍', '🔔', '✉'].map(i => <span key={i}>{i}</span>)}
+          </div>
+        </PhoneFrame>
+      );
+    }
+    // Desktop X
     return (
-      <div style={{ width: cardW, background: '#15202b', borderRadius: 16, padding: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-        {/* Tweet header */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#1d9bf0', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18 }}>𝕏</div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#e7e9ea' }}>{config.brandName || 'Your Brand'}</div>
-            <div style={{ fontSize: 12, color: '#71767b' }}>@{(config.brandName || 'yourbrand').toLowerCase().replace(/\s/g, '')}</div>
+      <BrowserFrame url="x.com/home">
+        <div style={{ display: 'flex', background: '#000', minHeight: 400 }}>
+          {/* Left nav */}
+          <div style={{ width: 68, padding: '12px', display: 'flex', flexDirection: 'column', gap: 16, flexShrink: 0, borderRight: '1px solid #2f3336' }}>
+            <div style={{ fontSize: 22, color: '#fff', fontWeight: 900 }}>𝕏</div>
+            {['🏠', '🔍', '🔔', '✉', '👤'].map(i => (
+              <div key={i} style={{ fontSize: 18, color: '#e7e9ea' }}>{i}</div>
+            ))}
+            <div style={{ padding: '8px 10px', background: '#1d9bf0', borderRadius: 999, color: '#fff', fontSize: 10, fontWeight: 700, textAlign: 'center', marginTop: 4 }}>Post</div>
+          </div>
+          {/* Feed */}
+          <div style={{ flex: 1, borderRight: '1px solid #2f3336' }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #2f3336', fontSize: 13, fontWeight: 700, color: '#e7e9ea' }}>For You</div>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #2f3336', display: 'flex', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#1d9bf0', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>𝕏</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, color: '#e7e9ea', marginBottom: 4 }}>
+                  <strong>{config.brandName || 'Your Brand'}</strong>
+                  <span style={{ color: '#71767b', marginLeft: 4 }}>@{handle} · 3h</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#e7e9ea', lineHeight: 1.5, marginBottom: 8 }}>{config.headline}</div>
+                <div style={{ aspectRatio: `${template.aspectW}/${template.aspectH}`, borderRadius: 12, overflow: 'hidden' }}>
+                  <PostPreview template={template} config={config} displayWidth={300} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, color: '#71767b', fontSize: 11 }}>
+                  <span>💬 12</span><span>🔁 48</span><span>♡ 284</span><span>📊 1.2K</span><span>📤</span>
+                </div>
+              </div>
+            </div>
+            {[0, 1].map(i => (
+              <div key={i} style={{ padding: '12px 14px', borderBottom: '1px solid #2f3336', display: 'flex', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#2f3336', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ width: '50%', height: 8, background: '#2f3336', borderRadius: 4, marginBottom: 6 }} />
+                  <div style={{ width: '85%', height: 6, background: '#2f3336', borderRadius: 4, marginBottom: 4 }} />
+                  <div style={{ width: '65%', height: 6, background: '#2f3336', borderRadius: 4 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Right sidebar */}
+          <div style={{ width: 130, padding: '12px', flexShrink: 0 }}>
+            <div style={{ background: '#16181c', borderRadius: 12, padding: '10px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#e7e9ea', marginBottom: 8 }}>What's happening</div>
+              {['Tech · Trending', 'Sports · Top', 'Business · Hot'].map(t => (
+                <div key={t} style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, color: '#71767b' }}>{t.split('·')[0].trim()}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#e7e9ea' }}>{t.split('·')[1].trim()}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div style={{ fontSize: 13, color: '#e7e9ea', marginBottom: 10, lineHeight: 1.5 }}>
-          {config.headline}
-        </div>
-        {/* Post image */}
-        <div style={{ width: '100%', aspectRatio: `${template.aspectW}/${template.aspectH}`, background: bg, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
-          <PostPreview template={template} config={config} displayWidth={cardW - 32} />
-        </div>
-        {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, color: '#71767b', fontSize: 12 }}>
-          {['💬 12', '🔁 48', '♡ 284', '📤'].map(a => <span key={a}>{a}</span>)}
-        </div>
-      </div>
+      </BrowserFrame>
     );
   }
 
+  // ── LinkedIn ─────────────────────────────────────────────────────────────────
   if (isLinkedIn) {
-    const cardW = view === 'mobile' ? 300 : 500;
+    if (view === 'mobile') {
+      const phoneW = 300;
+      return (
+        <PhoneFrame width={phoneW}>
+          {/* App header */}
+          <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: '#0a66c2', fontStyle: 'italic' }}>in</div>
+            <div style={{ display: 'flex', gap: 14, fontSize: 18 }}>
+              <span>🔍</span><span>🔔</span><span>✉</span>
+            </div>
+          </div>
+          {/* Post */}
+          <div style={{ background: '#fff' }}>
+            <div style={{ display: 'flex', gap: 8, padding: '10px 12px', alignItems: 'flex-start' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#0a66c2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, fontWeight: 700 }}>in</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#000' }}>{config.brandName || 'Your Company'}</div>
+                <div style={{ fontSize: 9, color: '#666' }}>10,482 followers · Promoted · 🌐</div>
+                <div style={{ fontSize: 9, color: '#0a66c2', fontWeight: 600 }}>Follow +</div>
+              </div>
+              <span style={{ fontSize: 16 }}>···</span>
+            </div>
+            <div style={{ padding: '0 12px 8px', fontSize: 11, color: '#333', lineHeight: 1.5 }}>{config.headline}</div>
+            <div style={{ width: '100%', aspectRatio: `${template.aspectW}/${template.aspectH}`, overflow: 'hidden' }}>
+              <PostPreview template={template} config={config} displayWidth={phoneW - 14} />
+            </div>
+            <div style={{ padding: '6px 12px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 9, color: '#666' }}>👍❤ 1,234</span>
+              <span style={{ fontSize: 9, color: '#666' }}>42 comments · 18 reposts</span>
+            </div>
+            <div style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-around' }}>
+              {[['👍', 'Like'], ['💬', 'Comment'], ['🔁', 'Repost'], ['➤', 'Send']].map(([icon, label]) => (
+                <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: 9, color: '#666', gap: 2 }}>
+                  <span style={{ fontSize: 14 }}>{icon}</span>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Bottom nav */}
+          <div style={{ borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-around', padding: '8px 0', fontSize: 18 }}>
+            {['🏠', '🔍', '➕', '🔔', '👤'].map(i => <span key={i}>{i}</span>)}
+          </div>
+        </PhoneFrame>
+      );
+    }
+    // Desktop LinkedIn
     return (
-      <div style={{ width: cardW, background: '#fff', borderRadius: 8, border: '1px solid #d0d0d0', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-        <div style={{ padding: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0a66c2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, fontWeight: 700 }}>in</div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#000' }}>{config.brandName || 'Your Company'}</div>
-            <div style={{ fontSize: 10, color: '#666' }}>10,482 followers · Promoted</div>
+      <BrowserFrame url="linkedin.com/feed">
+        {/* Top nav */}
+        <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ fontSize: 24, color: '#0a66c2', fontWeight: 900, fontStyle: 'italic', flexShrink: 0 }}>in</div>
+          <div style={{ background: '#f3f2ef', borderRadius: 4, padding: '5px 10px', fontSize: 11, color: '#666', display: 'flex', alignItems: 'center', gap: 5, flex: 1, maxWidth: 180 }}>
+            🔍 Search
+          </div>
+          <div style={{ display: 'flex', gap: 14, marginLeft: 'auto', fontSize: 18 }}>
+            <span>🏠</span><span>👥</span><span>🔔</span><span>✉</span>
           </div>
         </div>
-        <div style={{ padding: '0 12px 8px', fontSize: 12, color: '#333' }}>{config.headline}</div>
-        <div style={{ width: '100%', aspectRatio: `${template.aspectW}/${template.aspectH}`, background: bg, position: 'relative', overflow: 'hidden' }}>
-          <PostPreview template={template} config={config} displayWidth={cardW} />
-        </div>
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #e0e0e0' }}>
-          <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#666' }}>
-            {['👍 Like', '💬 Comment', '↗ Share'].map(a => <span key={a} style={{ cursor: 'pointer' }}>{a}</span>)}
+        {/* Feed */}
+        <div style={{ display: 'flex', background: '#f3f2ef', gap: 10, padding: '12px', justifyContent: 'center' }}>
+          {/* Profile card */}
+          <div style={{ width: 110, flexShrink: 0 }}>
+            <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', padding: '12px 10px', textAlign: 'center' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#0a66c2', margin: '0 auto 4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, fontWeight: 700 }}>in</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: '#000' }}>{config.brandName || 'Your Name'}</div>
+              <div style={{ fontSize: 8, color: '#666', marginTop: 2 }}>Your headline</div>
+              <div style={{ marginTop: 8, borderTop: '1px solid #e5e7eb', paddingTop: 8 }}>
+                <div style={{ fontSize: 9, color: '#666' }}>Profile viewers</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#0a66c2' }}>142</div>
+              </div>
+            </div>
+          </div>
+          {/* Main feed */}
+          <div style={{ width: 290, flexShrink: 0 }}>
+            <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 8, padding: '10px 12px', alignItems: 'flex-start' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#0a66c2', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>in</div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#000' }}>{config.brandName || 'Company'}</div>
+                  <div style={{ fontSize: 9, color: '#666' }}>10,482 followers · Promoted · 🌐</div>
+                </div>
+              </div>
+              <div style={{ padding: '0 12px 8px', fontSize: 11, color: '#333' }}>{config.headline}</div>
+              <div style={{ aspectRatio: `${template.aspectW}/${template.aspectH}`, overflow: 'hidden' }}>
+                <PostPreview template={template} config={config} displayWidth={290} />
+              </div>
+              <div style={{ padding: '8px 12px', borderTop: '1px solid #e5e7eb', display: 'flex', gap: 16 }}>
+                {['👍 Like', '💬 Comment', '🔁 Repost', '➤ Send'].map(a => (
+                  <div key={a} style={{ fontSize: 9, color: '#666' }}>{a}</div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </BrowserFrame>
     );
   }
 
-  // Generic frame
+  // ── Generic / All Platforms ──────────────────────────────────────────────────
+  const postW = view === 'mobile' ? 260 : 380;
   return (
-    <div style={{ background: '#f1f5f9', borderRadius: 12, padding: 20, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
-      {PostImg}
+    <div style={{ background: '#f1f5f9', borderRadius: 16, padding: 20, boxShadow: '0 4px 24px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <PostPreview template={template} config={config} displayWidth={postW} />
+      <div style={{ fontSize: 11, color: '#64748b' }}>{template.exportWidth}×{template.exportHeight}px · {template.name}</div>
     </div>
   );
 };
@@ -548,9 +840,7 @@ const PostPreview: React.FC<PostPreviewProps> = ({ template, config, displayWidt
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 5, background: config.accentColor }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 50px', gap: 18 }}>
           <div style={{ fontSize: 60, lineHeight: 1, color: config.accentColor, fontWeight: 800 }}>"</div>
-          <div style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.5, fontStyle: 'italic', color: config.textColor }}>
-            {config.headline}
-          </div>
+          <div style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.5, fontStyle: 'italic', color: config.textColor }}>{config.headline}</div>
           {config.showBrand && <div style={{ fontSize: 14, color: config.accentColor, fontWeight: 600 }}>{config.brandName}</div>}
           <div style={{ fontSize: 13, color: config.textColor, opacity: 0.5 }}>{config.subtext}</div>
         </div>
@@ -602,6 +892,17 @@ const STEPS = [
   { num: 3, label: 'Download & Share', Icon: Download },
 ];
 
+// ── Platform share label ──────────────────────────────────────────────────────
+
+function shareLabelForPlatform(platform: string): string {
+  const p = platform.toLowerCase();
+  if (p.includes('instagram') && p.includes('story')) return 'Share to Instagram Story';
+  if (p.includes('instagram')) return 'Share to Instagram';
+  if (p.includes('twitter') || p === 'x') return 'Post on X';
+  if (p.includes('linkedin')) return 'Share on LinkedIn';
+  return 'Share';
+}
+
 // ── Wizard Section ────────────────────────────────────────────────────────────
 
 interface WizardSectionProps {
@@ -615,6 +916,8 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
   const [selected, setSelected] = useState<Template | null>(null);
   const [config, setConfig] = useState<PostConfig | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [templates, setTemplates] = useState<Template[]>(FALLBACK_TEMPLATES);
   const [search, setSearch] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
@@ -652,30 +955,54 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
 
   useEffect(() => { setPage(0); }, [search, platformFilter]);
 
-  const pick = (tpl: Template) => {
-    setSelected(tpl);
-    setConfig({ ...tpl.defaults });
-  };
-
+  const pick = (tpl: Template) => { setSelected(tpl); setConfig({ ...tpl.defaults }); };
   const patch = useCallback((p: Partial<PostConfig>) => setConfig(prev => prev ? { ...prev, ...p } : null), []);
-
   const next = () => setStep(s => Math.min(s + 1, 2));
   const back = () => setStep(s => Math.max(s - 1, 0));
 
-  const handleDownload = () => {
-    if (!selected || !config) return;
-    downloadPostAsImage(selected, config);
+  const handleDownload = async () => {
+    if (!selected || !config || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      await downloadPostAsImage(selected, config);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
-  const handleShare = () => {
-    if (!selected || !config) return;
-    const text = encodeURIComponent([config.headline, config.subtext, config.showCta ? config.cta : ''].filter(Boolean).join('\n\n'));
-    const url = encodeURIComponent(window.location.href);
-    if (selected.shareUrlTemplate) {
-      const shareUrl = selected.shareUrlTemplate.replace('{text}', text).replace('{url}', url);
-      window.open(shareUrl, '_blank', 'noopener,width=600,height=500');
-    } else if (navigator.share) {
-      navigator.share({ title: config.headline, text: `${config.headline}\n\n${config.subtext}` }).catch(() => {});
+  const handleShare = async () => {
+    if (!selected || !config || isSharing) return;
+    setIsSharing(true);
+    try {
+      const plat = selected.platform.toLowerCase();
+      const isInstagramLike = plat.includes('instagram');
+
+      if (isInstagramLike) {
+        // Try native file sharing first (works on mobile), then fall back to download
+        try {
+          const blob = await createPostBlob(selected, config);
+          const file = new File([blob], `${selected.name.replace(/\s+/g, '-').toLowerCase()}.png`, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: config.headline, text: config.subtext });
+            return;
+          }
+        } catch { /* fall through */ }
+        // Desktop: download the image so user can share manually
+        await downloadPostAsImage(selected, config);
+        return;
+      }
+
+      const text = encodeURIComponent([config.headline, config.subtext, config.showCta ? config.cta : ''].filter(Boolean).join('\n\n'));
+      const url = encodeURIComponent(window.location.href);
+
+      if (selected.shareUrlTemplate) {
+        const shareUrl = selected.shareUrlTemplate.replace('{text}', text).replace('{url}', url);
+        window.open(shareUrl, '_blank', 'noopener,width=600,height=500');
+      } else if (navigator.share) {
+        await navigator.share({ title: config.headline, text: `${config.headline}\n\n${config.subtext}` });
+      }
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -689,6 +1016,19 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
 
   const reset = () => { setStep(0); setSelected(null); setConfig(null); };
 
+  // View switcher pill (reused in step 1 and step 2)
+  const ViewSwitcher = (
+    <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+      {(['mobile', 'desktop'] as MockupView[]).map(v => (
+        <button key={v} onClick={() => setMockupView(v)}
+          className={cn('px-3 py-1 text-xs rounded-md font-medium capitalize transition-colors',
+            mockupView === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
+          {v}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       {/* Step indicator */}
@@ -700,7 +1040,7 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
                 'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300',
                 step > idx ? 'bg-green-500 text-white' :
                 step === idx ? 'bg-blue-900 text-white ring-4 ring-blue-200' :
-                'bg-gray-200 text-gray-500'
+                'bg-gray-200 text-gray-500',
               )}>
                 {step > idx ? <Check className="w-4 h-4" /> : s.num}
               </div>
@@ -721,13 +1061,11 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Choose a Template</h2>
           <p className="text-gray-500 text-center mb-6">Select the style and format that fits your platform</p>
 
-          {/* Search + filter bar */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
-                type="text"
-                value={search}
+                type="text" value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search templates…"
                 className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
@@ -740,17 +1078,14 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
             </div>
           </div>
 
-          {/* Platform filter pills */}
           <div className="flex flex-wrap gap-2 mb-6">
-            <button
-              onClick={() => setPlatformFilter('')}
+            <button onClick={() => setPlatformFilter('')}
               className={cn('px-3 py-1 text-xs rounded-full border font-medium transition-colors',
                 platformFilter === '' ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-400 bg-white')}>
               All
             </button>
             {platforms.map(p => (
-              <button key={p}
-                onClick={() => setPlatformFilter(prev => prev === p ? '' : p)}
+              <button key={p} onClick={() => setPlatformFilter(prev => prev === p ? '' : p)}
                 className={cn('px-3 py-1 text-xs rounded-full border font-medium transition-colors',
                   platformFilter === p ? 'bg-blue-900 text-white border-blue-900' : 'border-gray-200 text-gray-600 hover:border-gray-400 bg-white')}>
                 {p}
@@ -758,7 +1093,6 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
             ))}
           </div>
 
-          {/* Grid */}
           {pageTemplates.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <Search className="w-8 h-8 mx-auto mb-3 opacity-40" />
@@ -769,7 +1103,7 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {pageTemplates.map(tpl => {
                 const isSelected = selected?.id === tpl.id;
-                const bg = tpl.defaults.useGradient
+                const tplBg = tpl.defaults.useGradient
                   ? `linear-gradient(135deg, ${tpl.defaults.bgColor}, ${tpl.defaults.bgColor2})`
                   : tpl.defaults.bgColor;
                 return (
@@ -777,7 +1111,7 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
                     className={cn('text-left rounded-2xl border-2 p-1 transition-all duration-200 hover:shadow-lg focus:outline-none',
                       isSelected ? 'border-blue-600 shadow-blue-100 shadow-lg' : 'border-transparent hover:border-gray-200')}>
                     <div className="rounded-xl overflow-hidden relative"
-                      style={{ aspectRatio: `${tpl.aspectW}/${tpl.aspectH}`, background: bg }}>
+                      style={{ aspectRatio: `${tpl.aspectW}/${tpl.aspectH}`, background: tplBg }}>
                       <div className="absolute inset-0 flex flex-col justify-center p-4 gap-2">
                         {tpl.defaults.showBrand && (
                           <div className="text-[8px] font-bold uppercase tracking-widest" style={{ color: tpl.defaults.accentColor }}>
@@ -813,16 +1147,13 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
             </div>
           )}
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
               <span className="text-xs text-gray-400">
                 Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
               </span>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage(p => Math.max(p - 1, 0))}
-                  disabled={page === 0}
+                <button onClick={() => setPage(p => Math.max(p - 1, 0))} disabled={page === 0}
                   className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -833,9 +1164,7 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
                     {i + 1}
                   </button>
                 ))}
-                <button
-                  onClick={() => setPage(p => Math.min(p + 1, totalPages - 1))}
-                  disabled={page >= totalPages - 1}
+                <button onClick={() => setPage(p => Math.min(p + 1, totalPages - 1))} disabled={page >= totalPages - 1}
                   className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -851,20 +1180,13 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Customise Your Post</h2>
           <p className="text-gray-500 text-center mb-8">Adjust text, colours, and style to match your brand</p>
           <div className="flex flex-col lg:flex-row gap-8 items-start">
-            {/* Live preview */}
+            {/* Live preview — sticky */}
             <div className="flex-shrink-0 flex flex-col items-center gap-3 lg:sticky lg:top-24">
-              {/* View switcher */}
-              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-                {(['mobile', 'desktop'] as MockupView[]).map(v => (
-                  <button key={v} onClick={() => setMockupView(v)}
-                    className={cn('px-3 py-1 text-xs rounded-md font-medium capitalize transition-colors',
-                      mockupView === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
-                    {v}
-                  </button>
-                ))}
-              </div>
+              {ViewSwitcher}
               <SocialMockup template={selected} config={config} view={mockupView} />
-              <span className="text-xs text-gray-400 font-medium">{selected.name} · {selected.platform} · {selected.exportWidth}×{selected.exportHeight}px</span>
+              <span className="text-xs text-gray-400 font-medium">
+                {selected.name} · {selected.platform} · {selected.exportWidth}×{selected.exportHeight}px
+              </span>
             </div>
 
             {/* Form */}
@@ -886,7 +1208,6 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
                 <Input value={config.cta} onChange={e => patch({ cta: e.target.value })} className="text-sm" disabled={!config.showCta} />
               </div>
 
-              {/* Background colour */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Background</Label>
                 <div className="flex gap-2 items-center">
@@ -903,7 +1224,6 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
                 </div>
               </div>
 
-              {/* Text / accent */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Text · Accent</Label>
                 <div className="flex gap-2 items-center">
@@ -915,7 +1235,6 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
                 </div>
               </div>
 
-              {/* Font */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Font Style</Label>
                 <div className="flex gap-2">
@@ -929,7 +1248,6 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
                 </div>
               </div>
 
-              {/* Visibility toggles */}
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Show / Hide</Label>
                 <div className="flex flex-col gap-2">
@@ -952,38 +1270,35 @@ const WizardSection: React.FC<WizardSectionProps> = ({ section }) => {
       {step === 2 && selected && config && (
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Ready to Share!</h2>
-          <p className="text-gray-500 text-center mb-8">Download as a {selected.exportWidth}×{selected.exportHeight}px PNG or share directly.</p>
+          <p className="text-gray-500 text-center mb-8">
+            Download as a {selected.exportWidth}×{selected.exportHeight}px PNG or share directly to {selected.platform}.
+          </p>
           <div className="flex flex-col lg:flex-row gap-10 items-start justify-center">
             {/* Mockup */}
             <div className="flex flex-col items-center gap-3">
-              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-                {(['mobile', 'desktop'] as MockupView[]).map(v => (
-                  <button key={v} onClick={() => setMockupView(v)}
-                    className={cn('px-3 py-1 text-xs rounded-md font-medium capitalize transition-colors',
-                      mockupView === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700')}>
-                    {v}
-                  </button>
-                ))}
-              </div>
+              {ViewSwitcher}
               <SocialMockup template={selected} config={config} view={mockupView} />
             </div>
 
-            {/* Actions panel */}
+            {/* Actions */}
             <div className="flex flex-col gap-5 w-full max-w-xs">
               <div className="flex flex-col gap-3">
-                <Button onClick={handleDownload} size="lg" className="bg-blue-900 hover:bg-blue-800 text-white gap-2 w-full">
-                  <Download className="w-4 h-4" /> Download PNG ({selected.exportWidth}×{selected.exportHeight})
+                <Button onClick={handleDownload} disabled={isDownloading} size="lg"
+                  className="bg-blue-900 hover:bg-blue-800 text-white gap-2 w-full disabled:opacity-60">
+                  <Download className="w-4 h-4" />
+                  {isDownloading ? 'Generating…' : `Download PNG (${selected.exportWidth}×${selected.exportHeight})`}
                 </Button>
+
                 <Button onClick={handleCopy} variant="outline" size="lg" className="gap-2 w-full">
                   {copied ? <CheckCheck className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   {copied ? 'Copied!' : 'Copy Caption Text'}
                 </Button>
-                {(selected.shareUrlTemplate || typeof navigator.share === 'function') && (
-                  <Button onClick={handleShare} variant="outline" size="lg" className="gap-2 w-full"
-                    style={{ borderColor: selected.platformColor, color: selected.platformColor }}>
-                    Share on {selected.platform}
-                  </Button>
-                )}
+
+                <Button onClick={handleShare} disabled={isSharing} variant="outline" size="lg"
+                  className="gap-2 w-full disabled:opacity-60"
+                  style={{ borderColor: selected.platformColor, color: selected.platformColor }}>
+                  {isSharing ? 'Opening…' : shareLabelForPlatform(selected.platform)}
+                </Button>
               </div>
 
               {/* Caption preview */}
@@ -1038,13 +1353,9 @@ const HeroSection: React.FC<{ section: LandingSection }> = ({ section }) => {
             {badge}
           </div>
         )}
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-5 leading-tight">
-          {section.heading}
-        </h1>
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-5 leading-tight">{section.heading}</h1>
         {section.subheading && (
-          <p className="text-indigo-200 max-w-2xl mx-auto text-lg mb-8 leading-relaxed">
-            {section.subheading}
-          </p>
+          <p className="text-indigo-200 max-w-2xl mx-auto text-lg mb-8 leading-relaxed">{section.subheading}</p>
         )}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to={ctaStart}>
@@ -1068,9 +1379,7 @@ const FeaturesSection: React.FC<{ section: LandingSection }> = ({ section }) => 
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-14">
         <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">{section.heading}</h2>
-        {section.subheading && (
-          <p className="text-gray-500 max-w-2xl mx-auto text-lg">{section.subheading}</p>
-        )}
+        {section.subheading && <p className="text-gray-500 max-w-2xl mx-auto text-lg">{section.subheading}</p>}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {section.items.map((item, i) => (
@@ -1089,9 +1398,7 @@ const HowItWorksSection: React.FC<{ section: LandingSection }> = ({ section }) =
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-14">
         <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">{section.heading}</h2>
-        {section.subheading && (
-          <p className="text-gray-500 max-w-xl mx-auto text-lg">{section.subheading}</p>
-        )}
+        {section.subheading && <p className="text-gray-500 max-w-xl mx-auto text-lg">{section.subheading}</p>}
       </div>
       <div className="flex flex-col gap-8">
         {section.items.map((item, i) => (
@@ -1113,14 +1420,11 @@ const HowItWorksSection: React.FC<{ section: LandingSection }> = ({ section }) =
 const CtaBannerSection: React.FC<{ section: LandingSection }> = ({ section }) => {
   const buttonText = section.config.buttonText ?? 'Get Started';
   const buttonUrl = section.config.buttonUrl ?? '/signup';
-
   return (
     <div className="py-20 px-4 bg-gradient-to-br from-blue-950 to-indigo-900 text-white text-center">
       <div className="max-w-2xl mx-auto">
         <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">{section.heading}</h2>
-        {section.subheading && (
-          <p className="text-indigo-200 text-lg mb-8">{section.subheading}</p>
-        )}
+        {section.subheading && <p className="text-indigo-200 text-lg mb-8">{section.subheading}</p>}
         <Link to={buttonUrl}>
           <Button size="lg" className="bg-white text-blue-900 hover:bg-blue-50 font-semibold px-10">
             {buttonText} <ArrowRight className="w-4 h-4 ml-1" />
@@ -1140,12 +1444,9 @@ function useSections(locale: string): LandingSection[] {
     const lang = locale.split('-')[0];
     const safeLocale = ['en', 'fi', 'sv'].includes(lang) ? lang : 'en';
     const apiUrl = (import.meta.env.VITE_API_URL ?? '') + `/api/landing-sections?locale=${safeLocale}`;
-
     fetch(apiUrl)
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then((data: LandingSection[]) => {
-        if (Array.isArray(data) && data.length > 0) setSections(data);
-      })
+      .then((data: LandingSection[]) => { if (Array.isArray(data) && data.length > 0) setSections(data); })
       .catch(() => { /* keep fallback */ });
   }, [locale]);
 
@@ -1226,7 +1527,6 @@ const LandingPage: React.FC = () => {
         {sorted.map(renderSection)}
       </main>
 
-      {/* Footer */}
       <footer className="py-8 px-4 sm:px-6 border-t border-gray-200 bg-white mt-auto">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-2">
